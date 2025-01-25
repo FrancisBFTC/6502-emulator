@@ -1,0 +1,3 @@
+STA #$55
+LDA #$0F
+INX

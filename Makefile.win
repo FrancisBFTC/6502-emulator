@@ -1,8 +1,8 @@
 # Project: emu6502
 # Makefile created by Dev-C++ 5.11
 
-CPP      = g++.exe -std=c++11
-CC       = gcc.exe -std=c++11
+CPP      = g++.exe -std=c99
+CC       = gcc.exe -std=c99
 WINDRES  = windres.exe
 OBJ      = src/main.o
 LINKOBJ  = src/main.o
