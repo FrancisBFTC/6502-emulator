@@ -5,7 +5,9 @@
 
 bool tokenizer(void);
 bool parser(void);
-bool parsing_numbers(int);
+bool parsing_operand(int);
+bool parse_addressing(int);
+bool setstate(bool, bool);
 void generator(void);
 
 #define MAX_LINE_LENGTH 1024
@@ -31,10 +33,14 @@ bool isAbsolute = false;
 bool isIndirect = false;
 bool indirectX = false;
 bool indirectY = false;
+bool isZeroPageX = false;
+bool isAbsoluteX = false;
+bool isAbsoluteY = false;
 int code_index = 0;
 
 unsigned char *memory;
 unsigned char *code_address;
+
 
 #define MNEMONICS_SIZE 	4
 const char* mnemonics[] = {
@@ -84,8 +90,15 @@ void assembler(const char *filename) {
         linenum++;
     }
 
-	for(int i = 0; i < code_index; i++)
-		printf("$%x ", code_address[i]);
+	unsigned short address = 0x600;
+	printf("Code Length: %d\n", code_index);
+	for(int i = 0; i < code_index; i++){
+		if(i % 16 == 0)
+			printf("\n0x%x: ", address);
+		printf("%x ", code_address[i]);
+		address++;
+	}
+		
 		
     fclose(file);
 }
@@ -98,13 +111,20 @@ void generator(){
     	opcode += 4;	// e.g. ADC = $65 + 4 = $69
     	operand_byte1 = (char) number & 0xFF;
 	}else{
-		if(indirectX) opcode -= 4;
-		if(indirectY) opcode += 12;
+		if(isIndirect){
+			if(indirectX) opcode -= 4;
+			if(indirectY) opcode += 12;
+		}
+		
 	    if(isZeroPage){
+	    	if(isZeroPageX)
+	    		opcode += 16;
 	    	operand_byte1 = (char) number & 0xFF;
 		}else{
 			if(isAbsolute){
 				opcode += 8;  	// e.g. ADC = $65 + 8 = $6D
+				if(isAbsoluteX)	opcode += 16;
+				if(isAbsoluteY) opcode += 12;
 	    		operand_byte1 = (char) number & 0xFF;
 	    		operand_byte2 = (char) ((number & 0xFF00) >> 8);
 			}
@@ -119,12 +139,12 @@ void generator(){
 }
 
 bool parser(){
-	printf("Mnemonic found: %s, Current Mnemonic: %s\n", mnemonics[mnemonic_index], mnemonic);
+	//printf("Mnemonic found: , Current Mnemonic: \n");
 	isZeroPage = false;
 	isAbsolute = false;
 	if(!isMnemonic){
 		if(isLiteral){
-			if(!parsing_numbers(2))
+			if(!parsing_operand(2))
         		return false;
         			
 			if(len > 2){
@@ -133,7 +153,7 @@ bool parser(){
 			}
 				
 		}else{
-			if(!parsing_numbers(1))
+			if(!parsing_operand(1))
         		return false;
         		
 			if(len <= 2){
@@ -154,56 +174,66 @@ bool parser(){
 	return true;
 }
 
-bool parsing_numbers(int index){
-	if(isIndirect){
+bool parse_addressing(int index){
+	//if(isIndirect){
+		char op[50] = {0};
 		bool isParenthesisValid = false;
 		indirectX = false;
 		indirectY = false;
-		char op[50];
-		//dest = (char*) malloc(strlen(operand));
 		int operand_len = strlen(operand);
 		int i = index;
+		int count = 0;
+		
 		for(; i < operand_len; i++){
 			if(operand[i] != ',' && operand[i] != ')'){
 				op[i-index] = operand[i];
+				count++;
 			}else{
-				if(operand[i] == ')')
+				if(operand[i] == ')' && isIndirect)
 					isParenthesisValid = true;
 				while(++i != operand_len){
 					if(operand[i] != ' ' && operand[i] != ','){
-						indirectX = (operand[i] == 'X' || operand[i] == 'x') && !isParenthesisValid;
-						indirectY = (operand[i] == 'Y' || operand[i] == 'y') && isParenthesisValid;
-						if(!indirectY && !indirectX){
+						indirectX = (operand[i] == 'X' || operand[i] == 'x') && !isParenthesisValid && isIndirect;
+						indirectY = (operand[i] == 'Y' || operand[i] == 'y') && isParenthesisValid && isIndirect;
+						isZeroPageX = (operand[i] == 'X' || operand[i] == 'x') && count <= 2 && !isIndirect;
+						isAbsoluteX = (operand[i] == 'X' || operand[i] == 'x') && count > 2 && count < 5 && !isIndirect;
+						isAbsoluteY = (operand[i] == 'Y' || operand[i] == 'y') && count > 2 && count < 5 && !isIndirect;
+						if(!indirectY && !indirectX && isIndirect){
 							printerr("Invalid indirect addressing");
 							return false;
 						}
-							
 						break;
 					}
-					if(operand[i] == ')')
+					if(operand[i] == ')' && isIndirect)
 						isParenthesisValid = true;
 				}
 			}
 		}
-		if(!isParenthesisValid){
+		if(!isParenthesisValid && isIndirect){
 			printerr("Missing parenthesis closed");
 			return false;
 		}
-		memcpy(dest, &op[index], 50);
-	}else{
-		strcpy(dest, &operand[index]);
-	}
 	
-	//dest = &op[index];
+	if(isIndirect)
+		memcpy(dest, &op[index], 50);
+	else
+		memcpy(dest, op, 50);
+	//}else{
+		//strcpy(dest, &operand[index]);
+	//}
+	return true;	
+}
+
+bool parsing_operand(int index){
+	if(!parse_addressing(index)) return false;
 	number = strtol(dest, &endptr, 16);
 	len = strlen(dest);
-	printf("String: %s, Hexa: %x, Decimal: %d\n", dest, number, number);
+	//printf("String: %s, Hexa: %x, Decimal: %d\n", dest, number, number);
 	if (*endptr != '\0') {
 		printerr("Cannot parse the hexa number");
 		return false;
 	}
 	
-	//free(dest);
 	return true;	
 }
 
@@ -214,36 +244,15 @@ bool tokenizer(){
     while (token != NULL) {
         if(token[0] == '#'){
         	if(token[1] == '$'){
-        		if(!isMnemonic){
-        			printerr("Invalid mnemonic");
-        			return false;
-				}
-        		operand = token;
-        		isMnemonic = false;
-        		isLiteral = true;
-        		isIndirect = false;
+        		if(!setstate(true, false)) return false;
 			}else{
 				printerr("Operand should be a hexa number");
 				return false;
 			}
 		}else if(token[0] == '$'){
-				if(!isMnemonic){
-        			printerr("Invalid mnemonic");
-        			return false;
-				}
-        		operand = token;
-        		isMnemonic = false;
-				isLiteral = false;
-				isIndirect = false;
+				if(!setstate(false, false)) return false;
 		}else if(token[0] == '('){
-				if(!isMnemonic){
-        			printerr("Invalid mnemonic");
-        			return false;
-				}
-				operand = token;
-				isMnemonic = false;
-				isLiteral = false;
-				isIndirect = true;
+				if(!setstate(false, true)) return false;
 		}else{
 			if(isMnemonic){
 				printerr("Invalid operand");
@@ -266,6 +275,18 @@ bool tokenizer(){
     
     mnemonic_index = i;
 	return true;	
+}
+
+bool setstate(bool literal, bool indirect){
+	if(!isMnemonic){
+        printerr("Invalid mnemonic");
+        return false;
+	}
+    isMnemonic = false;
+    isLiteral = literal;
+    isIndirect = indirect;
+    operand = token;
+    return true;
 }
 
 int main(int argc, char *argv[]) {
