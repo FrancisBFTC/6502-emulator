@@ -1,5 +1,0 @@
-ADC #$55
-AND $A0
-ASL $FF00
-ADC ($90),Y
-AND ($90,X)
