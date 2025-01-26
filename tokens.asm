@@ -1,3 +1,5 @@
-STA #$55
-LDA #$0F
-INX
+ADC #$55
+AND $A0
+ASL $FF00
+ADC ($90),Y
+AND ($90,X)
