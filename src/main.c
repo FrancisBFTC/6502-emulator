@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 bool tokenizer(void);
 bool parser(void);
@@ -9,6 +10,9 @@ bool parsing_operand(int);
 bool parse_addressing(int);
 bool setstate(bool, bool);
 void generator(void);
+
+void format_line(void);
+void format_operand(void);
 
 #define MAX_LINE_LENGTH 1024
 #define MEMORY_EMULATOR 65535
@@ -55,6 +59,19 @@ const char* opcodes[] = {
 
 void printerr(const char* msg){
 	printf("Error: Syntax error at line %d - %s.\n", linenum, msg);
+}
+
+void format_line(){
+	for(int i = 0; i < strlen(line); i++){
+		if(line[i] == 0x09){
+			line[i] = 0x20;
+		}
+	}
+}
+
+void format_operand(){
+	strcat(operand, token);
+    token = strtok(NULL, " ");
 }
 
 void assembler(const char *filename) {
@@ -192,20 +209,29 @@ bool parse_addressing(int index){
 				if(operand[i] == ')' && isIndirect)
 					isParenthesisValid = true;
 				while(++i != operand_len){
-					if(operand[i] != ' ' && operand[i] != ','){
-						indirectX = (operand[i] == 'X' || operand[i] == 'x') && !isParenthesisValid && isIndirect;
-						indirectY = (operand[i] == 'Y' || operand[i] == 'y') && isParenthesisValid && isIndirect;
+					if(operand[i] != ','){
+						if(operand[i-1] != ','){
+							printerr("Missing comma separator");
+							return false;
+						}
+						indirectX = (operand[i] == 'X' || operand[i] == 'x') && count <= 2 && !isParenthesisValid && isIndirect;
+						indirectY = (operand[i] == 'Y' || operand[i] == 'y') && count <= 2 && isParenthesisValid && isIndirect;
 						isZeroPageX = (operand[i] == 'X' || operand[i] == 'x') && count <= 2 && !isIndirect;
 						isAbsoluteX = (operand[i] == 'X' || operand[i] == 'x') && count > 2 && count < 5 && !isIndirect;
 						isAbsoluteY = (operand[i] == 'Y' || operand[i] == 'y') && count > 2 && count < 5 && !isIndirect;
-						if(!indirectY && !indirectX && isIndirect){
-							printerr("Invalid indirect addressing");
-							return false;
-						}
+					
 						break;
 					}
 					if(operand[i] == ')' && isIndirect)
 						isParenthesisValid = true;
+				}
+				if(!isIndirect && (!isZeroPageX && !isAbsoluteX && !isAbsoluteY)){
+					printerr("Invalid addressing - Missing register");
+					return false;
+				}
+				if(!indirectY && !indirectX && isIndirect){	// && verificar se é diferente de branchs e jumps
+					printerr("Invalid indirect addressing");
+					return false;
 				}
 			}
 		}
@@ -238,10 +264,17 @@ bool parsing_operand(int index){
 }
 
 bool tokenizer(){
+	format_line();
 	token = strtok(line, " ");
 	int i = 0;
+	int count_tok = 0;
 	
     while (token != NULL) {
+    	if(count_tok >= 2){
+    		format_operand();
+        	count_tok++;
+    		continue;
+		}
         if(token[0] == '#'){
         	if(token[1] == '$'){
         		if(!setstate(true, false)) return false;
@@ -271,6 +304,7 @@ bool tokenizer(){
 		}
         	
         token = strtok(NULL, " ");
+        count_tok++;
     }
     
     mnemonic_index = i;
