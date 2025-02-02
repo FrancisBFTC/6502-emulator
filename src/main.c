@@ -46,15 +46,92 @@ unsigned char *memory;
 unsigned char *code_address;
 
 
-#define MNEMONICS_SIZE 	4
+#define MNEMONICS_SIZE 	56
 const char* mnemonics[] = {
 	"ADC",
 	"AND",
-	"ASL"
+	"ASL",
+	"BIT",
+	
+	// Branch Instructions
+	"BPL",
+	"BMI",
+	"BVC",
+	"BVS",
+	"BCC",
+	"BCS",
+	"BNE",
+	"BEQ",
+	
+	"BRK",
+	
+	// Comparators - Different Logic for X and Y
+	"CMP",
+	"CPX",		// Lógica diferente nos cálculos
+	"CPY",		// Lógica diferente nos cálculos
+	
+	"DEC",
+	"EOR",
+	
+	// Flag Instructions (Processor Status - No operands)
+	"CLC",
+	"SEC",
+	"CLI",
+	"SEI",
+	"CLV",
+	"CLD",
+	"SED",
+	
+	"INC",
+	
+	// Jump instructions
+	"JMP",
+	"JSR",
+	
+	// Load Instructions - Differente Logic for X and Y
+	"LDA",
+	"LDX",	// Lógica diferente nos cálculos
+	"LDY",	// Lógica diferente nos cálculos
+	
+	"LSR",
+	"NOP",
+	"ORA",
+	"ROL", 	// Lógica diferente (na sintaxe)
+	"ROR",	// Lógica diferente (na sintaxe)
+	"RTI",
+	"RTS",
+	
+	"SBC",
+	"STA",
+	"STX",
+	"STY",
+	
+	// Stack Instructions
+	"PHA",
+	"PLA",
+	"PHP",
+	"PLP",
+	"TXS",
+	"TSX",
+	
+	// Register Instructions
+	"TAX",
+	"TXA",
+	"DEX",
+	"INX",
+	"TAY",
+	"TYA",
+	"DEY",
+	"INY"
 };
+// OTHERS PRE-PROCESSING COMMANDS: DCB, DEFINE
 
 const char* opcodes[] = {
-	0x65, 0x25, 0x06
+	0x65, 0x25, 0x06, 0x24, 0x10, 0x30, 0x50, 0x70, 0x90, 0xB0, 0xD0, 0xF0,
+	0x00, 0xC5, 0xE4, 0xC4, 0xC6, 0x45, 0x18, 0x38, 0x58, 0x78, 0xB8, 0xD8,
+	0xF8, 0xE6, 0x4C, 0x20, 0xA5, 0xA6, 0xA4, 0x46, 0xEA, 0x05, 0x26, 0x66,
+	0x40, 0x60, 0xE5, 0x85, 0x86, 0x84, 0x48, 0x68, 0x08, 0x28, 0x9A, 0xBA,
+	0xAA, 0x8A, 0xCA, 0xE8, 0xA8, 0x98, 0x88, 0xC8
 };
 
 void printerr(const char* msg){
@@ -125,7 +202,14 @@ void generator(){
     char operand_byte1, operand_byte2;
     
     if(isLiteral){
-    	opcode += 4;	// e.g. ADC = $65 + 4 = $69
+    	switch(mnemonic_index){
+    		case 14:
+    		case 15:
+    		case 29:
+    		case 30:	opcode -= 4;	// e.g. LDY = $A4 - 4 = $A0
+    					break;
+    		default:	opcode += 4;	// e.g. ADC = $65 + 4 = $69
+		}	
     	operand_byte1 = (char) number & 0xFF;
 	}else{
 		if(isIndirect){
@@ -198,7 +282,7 @@ bool parse_addressing(int index){
 		indirectX = false;
 		indirectY = false;
 		int operand_len = strlen(operand);
-		int i = index;
+		int i = (operand[0] == '(') ? index + 1 : index;
 		int count = 0;
 		
 		for(; i < operand_len; i++){
@@ -219,7 +303,11 @@ bool parse_addressing(int index){
 						isZeroPageX = (operand[i] == 'X' || operand[i] == 'x') && count <= 2 && !isIndirect;
 						isAbsoluteX = (operand[i] == 'X' || operand[i] == 'x') && count > 2 && count < 5 && !isIndirect;
 						isAbsoluteY = (operand[i] == 'Y' || operand[i] == 'y') && count > 2 && count < 5 && !isIndirect;
-					
+						//bool noBranchOrJump = mnemonic_index < 4 && mnemonic_index > 11 && mnemonic_index < 26 && mnemonic_index > 27;
+						if(!indirectY && !indirectX && isIndirect){	// && verificar se é diferente de branchs e jumps
+							printerr("Invalid indirect addressing");
+							return false;
+						}
 						break;
 					}
 					if(operand[i] == ')' && isIndirect)
@@ -229,7 +317,8 @@ bool parse_addressing(int index){
 					printerr("Invalid addressing - Missing register");
 					return false;
 				}
-				if(!indirectY && !indirectX && isIndirect){	// && verificar se é diferente de branchs e jumps
+				bool noBranchOrJump = (mnemonic_index < 4 || mnemonic_index > 11) && (mnemonic_index < 26 || mnemonic_index > 27);
+				if(!indirectY && !indirectX && isIndirect && noBranchOrJump){	// && verificar se é diferente de branchs e jumps
 					printerr("Invalid indirect addressing");
 					return false;
 				}
@@ -241,12 +330,9 @@ bool parse_addressing(int index){
 		}
 	
 	if(isIndirect)
-		memcpy(dest, &op[index], 50);
+		memcpy(dest, &op[index], count+1);
 	else
-		memcpy(dest, op, 50);
-	//}else{
-		//strcpy(dest, &operand[index]);
-	//}
+		memcpy(dest, op, count+1);
 	return true;	
 }
 
