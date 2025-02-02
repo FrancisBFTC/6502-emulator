@@ -8,14 +8,32 @@ bool tokenizer(void);
 bool parser(void);
 bool parsing_operand(int);
 bool parse_addressing(int);
-bool setstate(bool, bool);
-void generator(void);
+bool setstate(bool, bool, bool);
+bool generator(void);
 
 void format_line(void);
 void format_operand(void);
+void reset_states(void);
 
 #define MAX_LINE_LENGTH 1024
 #define MEMORY_EMULATOR 65535
+
+// -----------------------------------------------------
+// Addressing Types
+#define NOP		0x00
+#define IMM 	0x01
+#define ZP 		0x02
+#define ZPX 	0x04
+#define ZPY 	0x08
+#define AB 		0x10
+#define ABX		0x20
+#define ABY		0x40
+#define INDX 	0x80
+#define INDY 	0x100
+#define IND 	0x200
+#define ACC		0x400
+#define REL 	0x800
+// -----------------------------------------------------
 
 char line[MAX_LINE_LENGTH];
 bool isMnemonic = false;
@@ -38,8 +56,10 @@ bool isIndirect = false;
 bool indirectX = false;
 bool indirectY = false;
 bool isZeroPageX = false;
+bool isZeroPageY = false;
 bool isAbsoluteX = false;
 bool isAbsoluteY = false;
+bool isAccumulator = false;
 int code_index = 0;
 
 unsigned char *memory;
@@ -65,10 +85,10 @@ const char* mnemonics[] = {
 	
 	"BRK",
 	
-	// Comparators - Different Logic for X and Y
+	// Comparators
 	"CMP",
-	"CPX",		// Lógica diferente nos cálculos
-	"CPY",		// Lógica diferente nos cálculos
+	"CPX",
+	"CPY",
 	
 	"DEC",
 	"EOR",
@@ -88,16 +108,16 @@ const char* mnemonics[] = {
 	"JMP",
 	"JSR",
 	
-	// Load Instructions - Differente Logic for X and Y
+	// Load Instructions
 	"LDA",
-	"LDX",	// Lógica diferente nos cálculos
-	"LDY",	// Lógica diferente nos cálculos
+	"LDX",
+	"LDY",
 	
 	"LSR",
 	"NOP",
 	"ORA",
-	"ROL", 	// Lógica diferente (na sintaxe)
-	"ROR",	// Lógica diferente (na sintaxe)
+	"ROL",
+	"ROR",
 	"RTI",
 	"RTS",
 	
@@ -134,8 +154,43 @@ const char* opcodes[] = {
 	0xAA, 0x8A, 0xCA, 0xE8, 0xA8, 0x98, 0x88, 0xC8
 };
 
+const unsigned short addressing[] = {
+	IMM + ZP + ZPX + AB + ABX + ABY + INDX + INDY,	// ADC
+	IMM + ZP + ZPX + AB + ABX + ABY + INDX + INDY,	// AND
+	ACC + ZP + ZPX + AB + ABX,						// ASL
+	ZP + AB,										// BIT
+	REL, REL, REL, REL, REL, REL, REL, REL, NOP,	// Branch Instructions & BRK
+	IMM + ZP + ZPX + AB + ABX + ABY + INDX + INDY,	// CMP
+	IMM + ZP + AB,									// CPX
+	IMM + ZP + AB,									// CPY
+	ZP + ZPX + AB + ABX, 							// DEC
+	IMM + ZP + ZPX + AB + ABX + ABY + INDX + INDY,	// EOR
+	NOP, NOP, NOP, NOP, NOP, NOP, NOP,				// Flag Instructions
+	ZP + ZPX + AB + ABX, 							// INC
+	AB + IND, AB,									// JMP & JSR
+	IMM + ZP + ZPX + AB + ABX + ABY + INDX + INDY,	// LDA
+	IMM + ZP + ZPY + AB + ABY,						// LDX
+	IMM + ZP + ZPX + AB + ABX,						// LDY
+	ACC + ZP + ZPX + AB + ABX,						// LSR
+	NOP,											// NOP
+	IMM + ZP + ZPX + AB + ABX + ABY + INDX + INDY,	// ORA
+	ACC + ZP + ZPX + AB + ABX,						// ROL
+	ACC + ZP + ZPX + AB + ABX,						// ROR
+	NOP, NOP,										// RTI & RTS
+	IMM + ZP + ZPX + AB + ABX + ABY + INDX + INDY,	// SBC
+	ZP + ZPX + AB + ABX + ABY + INDX + INDY,		// STA
+	ZP + ZPY + AB,									// STX
+	ZP + ZPX + AB,									// STY
+	NOP, NOP, NOP, NOP, NOP, NOP, 					// Stack Instructions
+	NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP			// Register Instructions
+};
+
 void printerr(const char* msg){
 	printf("Error: Syntax error at line %d - %s.\n", linenum, msg);
+}
+
+void error(const char* msg){
+	printf("%s: error at line %d - %s.\n", mnemonic, linenum, msg);
 }
 
 void format_line(){
@@ -151,6 +206,21 @@ void format_operand(){
     token = strtok(NULL, " ");
 }
 
+void reset_states(){
+	isMnemonic = false;
+	isAccumulator = false;
+	isLiteral = false;
+	isZeroPage = false;
+	isZeroPageX = false;
+	isZeroPageY = false;
+	isAbsolute = false;
+	isAbsoluteX = false;
+	isAbsoluteY = false;
+	isIndirect = false;
+	indirectX = false;
+	indirectY = false;
+}
+
 void assembler(const char *filename) {
 	memory = (unsigned char *) malloc(MEMORY_EMULATOR * sizeof(unsigned char));
 	if (memory == NULL) {
@@ -160,7 +230,8 @@ void assembler(const char *filename) {
     
     // Definir o endereço base de código como 0x600
     code_address = memory + 0x600;
-    
+	bool isValid = false;
+	    
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Erro ao abrir o arquivo");
@@ -170,80 +241,169 @@ void assembler(const char *filename) {
     while (fgets(line, sizeof(line), file)) {
         line[strcspn(line, "\n")] = '\0';
         
-		bool isValid = tokenizer();
+        // Análise Léxica
+		isValid = tokenizer();
         if(!isValid)
         	break;
 		
+		// Análise sintática
 		isValid = parser();
 		if(!isValid)
         	break;
         
-		// Gerador...
-		generator();
+		// Análise semântica & Gerador...
+		isValid = generator();
+		if(!isValid)
+        	break;
 			
         linenum++;
     }
 
-	unsigned short address = 0x600;
-	printf("Code Length: %d\n", code_index);
-	for(int i = 0; i < code_index; i++){
-		if(i % 16 == 0)
-			printf("\n0x%x: ", address);
-		printf("%x ", code_address[i]);
-		address++;
+	if(code_index > 2560){
+		perror("Error: The maximum program size is 2560 bytes.");
+        exit(EXIT_FAILURE);
 	}
-		
-		
+	
+	if(isValid){
+		unsigned short address = 0x600;
+		printf("Code Length: %d\n", code_index);
+		for(int i = 0; i < code_index; i++){
+			if(i % 16 == 0)
+				printf("\n0x%x: ", address);
+			if(code_address[i] < 0x10)
+				printf("0%X ", code_address[i]);
+			else
+				printf("%X ", code_address[i]);
+			address++;
+		}	
+	}
+	
     fclose(file);
 }
 
-void generator(){
+bool generator(){
     char opcode = opcodes[mnemonic_index]; // e.g. ADC = $65
     char operand_byte1, operand_byte2;
+    bool isBranch = mnemonic_index > 3 && mnemonic_index < 12;
+	bool isJump = mnemonic_index == 26 || mnemonic_index == 27;
     
-    if(isLiteral){
-    	switch(mnemonic_index){
-    		case 14:
-    		case 15:
-    		case 29:
-    		case 30:	opcode -= 4;	// e.g. LDY = $A4 - 4 = $A0
-    					break;
-    		default:	opcode += 4;	// e.g. ADC = $65 + 4 = $69
-		}	
-    	operand_byte1 = (char) number & 0xFF;
-	}else{
-		if(isIndirect){
-			if(indirectX) opcode -= 4;
-			if(indirectY) opcode += 12;
-		}
-		
-	    if(isZeroPage){
-	    	if(isZeroPageX)
-	    		opcode += 16;
-	    	operand_byte1 = (char) number & 0xFF;
+    if(addressing[mnemonic_index] && !isAccumulator){
+    	
+		operand_byte1 = (char) number & 0xFF;
+	    
+	    if(isLiteral){
+	    	if(addressing[mnemonic_index] & IMM){
+		    	switch(mnemonic_index){
+		    		case 14:
+		    		case 15:
+		    		case 29:
+		    		case 30:	opcode -= 4;	// e.g. LDY = $A4 - 4 = $A0
+		    					break;
+		    		default:	opcode += 4;	// e.g. ADC = $65 + 4 = $69
+				}	
+			}else{
+				error("cannot use immediate addressing");
+				return false;
+			}
+	
 		}else{
-			if(isAbsolute){
-				opcode += 8;  	// e.g. ADC = $65 + 8 = $6D
-				if(isAbsoluteX)	opcode += 16;
-				if(isAbsoluteY) opcode += 12;
-	    		operand_byte1 = (char) number & 0xFF;
-	    		operand_byte2 = (char) ((number & 0xFF00) >> 8);
+			if(isIndirect){
+				if(indirectX){
+					if(addressing[mnemonic_index] & INDX)
+						opcode -= 4;
+					else{
+						error("cannot use indirectX addressing");
+						return false;
+					}
+							
+				}else if(indirectY){
+					if(addressing[mnemonic_index] & INDY)
+						opcode += 12;
+					else{
+						error("cannot use indirectY addressing");
+						return false;
+					}
+						
+				}else{
+					if(!(addressing[mnemonic_index] & IND)){
+						error("cannot use indirect addressing");
+						return false;
+					}
+					if(isJump)	opcode += 32;
+				}
+			}
+			
+		    if(isZeroPage && ((isZeroPageX || isZeroPageY) || isBranch)){	//  && mnemonic_index == 29
+		    	if(isZeroPageY && !(addressing[mnemonic_index] & ZPY)){
+		    			error("cannot use ZeroPageY addressing");
+		    			return false;
+				}else if(isZeroPageX && !(addressing[mnemonic_index] & ZPX)){
+						error("cannot use ZeroPageX addressing");
+		    			return false;
+		    	}else if(!(addressing[mnemonic_index] & ZP)){
+		    		error("cannot use ZeroPage addressing");
+		    		return false;
+				}else{
+		    		opcode += 16;
+				}
+			}else{
+				if(isAbsolute){
+					opcode += 8;  	// e.g. ADC = $65 + 8 = $6D
+					if(isAbsoluteX){
+						if(addressing[mnemonic_index] & ABX)
+							opcode += 16;
+						else{
+							error("cannot use absoluteX addressing");
+							return false;
+						}
+					}else if(isAbsoluteY){
+						if(addressing[mnemonic_index] & ABY)
+							opcode = (mnemonic_index != 29) ? opcode + 12 : opcode + 16;
+						else{
+							error("cannot use absoluteY addressing");
+							return false;
+						}	
+					}else{
+						if(!(addressing[mnemonic_index] & AB)){
+							error("cannot use absolute addressing");
+							return false;
+						}
+						if(isJump)	opcode -= 8;
+					}
+					
+		    		operand_byte2 = (char) ((number & 0xFF00) >> 8);
+				}
 			}
 		}
+	    
+	    code_address[code_index++] = opcode;
+	    code_address[code_index++] = operand_byte1;
+	    if(isAbsolute)
+	    	code_address[code_index++] = operand_byte2;
+	}else{
+		if(isAccumulator){
+    		if(addressing[mnemonic_index] & ACC)
+    			opcode += 4;
+    		else{
+    			error("cannot use accumulator addressing");
+				return false;	
+			}
+		}
+		code_address[code_index++] = opcode;
 	}
-    
-    code_address[code_index++] = opcode;
-    code_address[code_index++] = operand_byte1;
-    if(isAbsolute)
-    	code_address[code_index++] = operand_byte2;
-
+	return true;
 }
 
 bool parser(){
-	//printf("Mnemonic found: , Current Mnemonic: \n");
-	isZeroPage = false;
-	isAbsolute = false;
 	if(!isMnemonic){
+		if(!addressing[mnemonic_index]){
+			printerr("Instruction expect 0 operand. Given 1");
+			return false;
+		}
+		
+		if(isAccumulator)
+			return true;
+				
 		if(isLiteral){
 			if(!parsing_operand(2))
         		return false;
@@ -253,7 +413,7 @@ bool parser(){
 				return false;
 			}
 				
-		}else{
+		}else{	
 			if(!parsing_operand(1))
         		return false;
         		
@@ -269,56 +429,91 @@ bool parser(){
 			}
 		}
 	}else{
+		isAccumulator = mnemonic_index == 2 || mnemonic_index == 31 || mnemonic_index == 34 || mnemonic_index == 35;
 		// Instrução de 0 operando
-		printf("No operands: %s\n", mnemonics[mnemonic_index]);
+		if(addressing[mnemonic_index] && !isAccumulator){
+			printerr("Instruction expect 1 operand. Given 0");
+			return false;
+		}
 	}
 	return true;
 }
 
 bool parse_addressing(int index){
-	//if(isIndirect){
 		char op[50] = {0};
 		bool isParenthesisValid = false;
-		indirectX = false;
-		indirectY = false;
 		int operand_len = strlen(operand);
 		int i = (operand[0] == '(') ? index + 1 : index;
 		int count = 0;
 		
+		if(isIndirect && operand[index] != '$'){
+			printerr("Incorrect indirect number - insert '$'");
+			return false;
+		}
 		for(; i < operand_len; i++){
 			if(operand[i] != ',' && operand[i] != ')'){
 				op[i-index] = operand[i];
 				count++;
 			}else{
+				if(isLiteral){
+					printerr("Incorrect immediate addressing");
+					return false;
+				}
 				if(operand[i] == ')' && isIndirect)
 					isParenthesisValid = true;
+				else if(operand[i] == ')' && !isIndirect){
+						printerr("Missing parenthesis open");
+						return false;
+					}
 				while(++i != operand_len){
 					if(operand[i] != ','){
 						if(operand[i-1] != ','){
 							printerr("Missing comma separator");
 							return false;
 						}
-						indirectX = (operand[i] == 'X' || operand[i] == 'x') && count <= 2 && !isParenthesisValid && isIndirect;
-						indirectY = (operand[i] == 'Y' || operand[i] == 'y') && count <= 2 && isParenthesisValid && isIndirect;
-						isZeroPageX = (operand[i] == 'X' || operand[i] == 'x') && count <= 2 && !isIndirect;
-						isAbsoluteX = (operand[i] == 'X' || operand[i] == 'x') && count > 2 && count < 5 && !isIndirect;
-						isAbsoluteY = (operand[i] == 'Y' || operand[i] == 'y') && count > 2 && count < 5 && !isIndirect;
-						//bool noBranchOrJump = mnemonic_index < 4 && mnemonic_index > 11 && mnemonic_index < 26 && mnemonic_index > 27;
-						if(!indirectY && !indirectX && isIndirect){	// && verificar se é diferente de branchs e jumps
+						bool isRegisterX = (operand[i] == 'X' || operand[i] == 'x');
+						bool isRegisterY = (operand[i] == 'Y' || operand[i] == 'y');
+						indirectX = isRegisterX && count <= 2 && !isParenthesisValid && isIndirect;
+						indirectY = isRegisterY && count <= 2 && isParenthesisValid && isIndirect;
+						isZeroPageX = isRegisterX && count <= 2 && !isIndirect;
+						isZeroPageY = isRegisterY && count <= 2 && !isIndirect;
+						isAbsoluteX = isRegisterX && count > 2 && count < 5 && !isIndirect;
+						isAbsoluteY = isRegisterY && count > 2 && count < 5 && !isIndirect;
+						
+						if(!indirectY && !indirectX && isIndirect){
 							printerr("Invalid indirect addressing");
 							return false;
 						}
+						
 						break;
 					}
 					if(operand[i] == ')' && isIndirect)
 						isParenthesisValid = true;
 				}
-				if(!isIndirect && (!isZeroPageX && !isAbsoluteX && !isAbsoluteY)){
+				if(operand[i+1] == ')'){
+					if(operand[i+2] != NULL){
+						printerr("Invalid operand");
+						printf("char error -> %c\n", operand[i+2]);
+						return false;
+					}	
+				}else{
+					if(operand[i+1] != NULL){
+						printerr("Invalid operand");
+						printf("char error -> %c\n", operand[i+1]);
+						return false;
+					}
+				}
+				
+				if(operand[i+1] == ')' && !isIndirect){
+					printerr("Missing parenthesis open");
+					return false;
+				}
+				if(!isIndirect && (!isZeroPageX && !isZeroPageY && !isAbsoluteX && !isAbsoluteY)){
 					printerr("Invalid addressing - Missing register");
 					return false;
 				}
-				bool noBranchOrJump = (mnemonic_index < 4 || mnemonic_index > 11) && (mnemonic_index < 26 || mnemonic_index > 27);
-				if(!indirectY && !indirectX && isIndirect && noBranchOrJump){	// && verificar se é diferente de branchs e jumps
+				bool noJump = (mnemonic_index != 26 && mnemonic_index != 27);
+				if(!indirectY && !indirectX && isIndirect && noJump){	// && verificar se é diferente de jumps
 					printerr("Invalid indirect addressing");
 					return false;
 				}
@@ -340,7 +535,7 @@ bool parsing_operand(int index){
 	if(!parse_addressing(index)) return false;
 	number = strtol(dest, &endptr, 16);
 	len = strlen(dest);
-	//printf("String: %s, Hexa: %x, Decimal: %d\n", dest, number, number);
+
 	if (*endptr != '\0') {
 		printerr("Cannot parse the hexa number");
 		return false;
@@ -354,6 +549,7 @@ bool tokenizer(){
 	token = strtok(line, " ");
 	int i = 0;
 	int count_tok = 0;
+	reset_states();
 	
     while (token != NULL) {
     	if(count_tok >= 2){
@@ -363,20 +559,22 @@ bool tokenizer(){
 		}
         if(token[0] == '#'){
         	if(token[1] == '$'){
-        		if(!setstate(true, false)) return false;
+        		if(!setstate(true, false, false)) return false;
 			}else{
 				printerr("Operand should be a hexa number");
 				return false;
 			}
 		}else if(token[0] == '$'){
-				if(!setstate(false, false)) return false;
+				if(!setstate(false, false, false)) return false;
 		}else if(token[0] == '('){
-				if(!setstate(false, true)) return false;
+				if(!setstate(false, true, false)) return false;
+		}else if(strcmp(token, "A") == 0 && isMnemonic){
+				if(!setstate(false, false, true)) return false;
 		}else{
 			if(isMnemonic){
 				printerr("Invalid operand");
 				return false;
-			}	
+			}
 			isMnemonic = true;
 			mnemonic = token;
 			for(; i < MNEMONICS_SIZE; i++)
@@ -397,7 +595,7 @@ bool tokenizer(){
 	return true;	
 }
 
-bool setstate(bool literal, bool indirect){
+bool setstate(bool literal, bool indirect, bool accumulator){
 	if(!isMnemonic){
         printerr("Invalid mnemonic");
         return false;
@@ -405,6 +603,7 @@ bool setstate(bool literal, bool indirect){
     isMnemonic = false;
     isLiteral = literal;
     isIndirect = indirect;
+    isAccumulator = accumulator;
     operand = token;
     return true;
 }

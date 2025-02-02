@@ -1,0 +1,22 @@
+INST #$44,X -> Sem análise - Checked
+INST #$44,Y -> Erro na análise (ZeroPageY) - Checked
+INST $4400, -> Sem análise - Checked
+BIT $4400,  -> Sem análise de erro - Checked
+BIT $4400,Y -> Erro na análise (AbsoluteX) - Checked
+BPL ($C0)   -> Sem análise - Checked
+BPL $C000   -> Sem análise - Checked
+BPL $C0,Y   -> Erro na análise (ZeroPage) - Checked
+BPL $C0,X   -> Erro na análise (ZeroPage) - Checked
+JMP $5597   -> Erro de opcode (54. Expect 4C) - Checked
+JMP ($5597) -> Erro de opcode (54. Expect 6C) - Checked
+JMP $5597   -> Erro de opcode (28. Expect 20) - Checked
+
+BPL $C000
+BPL $C0
+BMI $C0
+BVC $C0
+BVS $C0
+BCC $C0
+BCS $C0
+BNE $C0
+BEQ $C0
