@@ -60,6 +60,9 @@ bool isZeroPageY = false;
 bool isAbsoluteX = false;
 bool isAbsoluteY = false;
 bool isAccumulator = false;
+
+bool toIgnore = false;
+bool isLineComment = false;
 int code_index = 0;
 
 unsigned char *memory;
@@ -195,9 +198,10 @@ void error(const char* msg){
 
 void format_line(){
 	for(int i = 0; i < strlen(line); i++){
-		if(line[i] == 0x09){
+		if(line[i] == 0x09)
 			line[i] = 0x20;
-		}
+		else if(line[i] > 0x60 && line[i] < 0x7B)
+				line[i] -= 0x20;
 	}
 }
 
@@ -219,6 +223,7 @@ void reset_states(){
 	isIndirect = false;
 	indirectX = false;
 	indirectY = false;
+	isLineComment = false;
 }
 
 void assembler(const char *filename) {
@@ -240,11 +245,15 @@ void assembler(const char *filename) {
 
     while (fgets(line, sizeof(line), file)) {
         line[strcspn(line, "\n")] = '\0';
-        
+		
         // Análise Léxica
 		isValid = tokenizer();
         if(!isValid)
         	break;
+        if(toIgnore){
+        	linenum++;
+        	continue;
+		} 
 		
 		// Análise sintática
 		isValid = parser();
@@ -452,6 +461,8 @@ bool parse_addressing(int index){
 		}
 		for(; i < operand_len; i++){
 			if(operand[i] != ',' && operand[i] != ')'){
+				if(operand[i] == ';')	
+					break;
 				op[i-index] = operand[i];
 				count++;
 			}else{
@@ -467,10 +478,13 @@ bool parse_addressing(int index){
 					}
 				while(++i != operand_len){
 					if(operand[i] != ','){
+						if(operand[i] == ';')	
+							break;
 						if(operand[i-1] != ','){
 							printerr("Missing comma separator");
 							return false;
 						}
+						
 						bool isRegisterX = (operand[i] == 'X' || operand[i] == 'x');
 						bool isRegisterY = (operand[i] == 'Y' || operand[i] == 'y');
 						indirectX = isRegisterX && count <= 2 && !isParenthesisValid && isIndirect;
@@ -491,13 +505,13 @@ bool parse_addressing(int index){
 						isParenthesisValid = true;
 				}
 				if(operand[i+1] == ')'){
-					if(operand[i+2] != NULL){
+					if(operand[i+2] != NULL && operand[i+2] != ';'){
 						printerr("Invalid operand");
 						printf("char error -> %c\n", operand[i+2]);
 						return false;
 					}	
 				}else{
-					if(operand[i+1] != NULL){
+					if(operand[i+1] != NULL && operand[i+1] != ';' && operand[i] != ';'){
 						printerr("Invalid operand");
 						printf("char error -> %c\n", operand[i+1]);
 						return false;
@@ -547,19 +561,29 @@ bool parsing_operand(int index){
 bool tokenizer(){
 	format_line();
 	token = strtok(line, " ");
+	
+	toIgnore = token == NULL || token[0] == ';';
+	if(toIgnore) return true;
+        
 	int i = 0;
 	int count_tok = 0;
 	reset_states();
 	
     while (token != NULL) {
+    	isLineComment = token[0] == ';' || isLineComment;
+    	if(isLineComment){
+    		token = strtok(NULL, " ");
+    		continue;
+		}
     	if(count_tok >= 2){
     		format_operand();
         	count_tok++;
     		continue;
 		}
-        if(token[0] == '#'){
-        	if(token[1] == '$'){
-        		if(!setstate(true, false, false)) return false;
+			
+		if(token[0] == '#'){
+	        if(token[1] == '$'){
+	        	if(!setstate(true, false, false)) return false;
 			}else{
 				printerr("Operand should be a hexa number");
 				return false;
