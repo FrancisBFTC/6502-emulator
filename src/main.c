@@ -15,6 +15,12 @@ void format_line(void);
 void format_operand(void);
 void reset_states(void);
 
+void preprocessor(const char*);
+void assembler(const char*);
+void proc_define(void);
+void proc_dcb(void);
+void (*func_ptr)();
+
 #define MAX_LINE_LENGTH 1024
 #define MEMORY_EMULATOR 65535
 
@@ -36,12 +42,14 @@ void reset_states(void);
 // -----------------------------------------------------
 
 char line[MAX_LINE_LENGTH];
+bool isDirective = false;
 bool isMnemonic = false;
 bool isLiteral = false;
 int linenum = 1;
 int number;
 int len;
 char *token;
+char *directive;
 char *mnemonic;
 char *operand;
 
@@ -147,7 +155,43 @@ const char* mnemonics[] = {
 	"DEY",
 	"INY"
 };
-// OTHERS PRE-PROCESSING COMMANDS: DCB, DEFINE
+
+#define DIRECTIVES_SIZE 	2
+const char* directives[] = {
+	"DCB",
+	"DEFINE"
+};
+
+int* process[] = {
+	(int*)proc_dcb, (int*)proc_define
+};
+
+void proc_dcb(){
+	printf("Comando: DCB,");
+	printf(" Bytes: ");
+	int pos = 1;
+	while(token != NULL){
+		token = strtok(NULL, " ");
+		printf("%s", token);
+		pos++;
+	}
+	printf("\n");
+}
+
+void proc_define(){
+	printf("Comando: DEFINE,");
+	int pos = 1;
+	while(token != NULL){
+		token = strtok(NULL, " ");
+		switch(pos){
+			case 1:	printf(" Nome: %s,", token);
+					break;
+			case 2: printf(" Valor: %s\n", token);
+					break;
+		}
+		pos++;
+	}
+}
 
 const char* opcodes[] = {
 	0x65, 0x25, 0x06, 0x24, 0x10, 0x30, 0x50, 0x70, 0x90, 0xB0, 0xD0, 0xF0,
@@ -197,6 +241,7 @@ void error(const char* msg){
 }
 
 void format_line(){
+	line[strcspn(line, "\n")] = '\0';
 	for(int i = 0; i < strlen(line); i++){
 		if(line[i] == 0x09)
 			line[i] = 0x20;
@@ -226,7 +271,41 @@ void reset_states(){
 	isLineComment = false;
 }
 
+void preprocessor(const char *filename){
+	FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Erro ao abrir o arquivo");
+        return;
+    }
+    while (fgets(line, sizeof(line), file)){
+    	format_line();
+		token = strtok(line, " ");
+		if(token == NULL || token[0] == ';') continue;
+		
+		while (token != NULL) {
+	    	isLineComment = token[0] == ';' || isLineComment;
+	    	if(isLineComment){
+	    		token = strtok(NULL, " ");
+	    		continue;
+			}
+			isDirective = true;
+			directive = token;
+			int i = 0;
+			for(; i < DIRECTIVES_SIZE; i++){
+				if(strcmp(directives[i], directive) == 0){
+					func_ptr = (void(*)())process[i];
+					func_ptr();
+					break;	
+				}	
+			}
+			token = strtok(NULL, " ");
+		}
+	}
+}
+
 void assembler(const char *filename) {
+	preprocessor(filename);
+	
 	memory = (unsigned char *) malloc(MEMORY_EMULATOR * sizeof(unsigned char));
 	if (memory == NULL) {
         printf("Erro ao alocar memória.\n");
@@ -244,8 +323,7 @@ void assembler(const char *filename) {
     }
 
     while (fgets(line, sizeof(line), file)) {
-        line[strcspn(line, "\n")] = '\0';
-		
+    	
         // Análise Léxica
 		isValid = tokenizer();
         if(!isValid)
