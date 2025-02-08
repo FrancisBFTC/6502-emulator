@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include "list.h"
 
 bool tokenizer(void);
 bool parser(void);
@@ -15,11 +16,13 @@ void format_line(void);
 void format_operand(void);
 void reset_states(void);
 
-void preprocessor(const char*);
+bool preprocessor(const char*);
 void assembler(const char*);
 void proc_define(void);
 void proc_dcb(void);
 void (*func_ptr)();
+
+void printerr(const char*);
 
 #define MAX_LINE_LENGTH 1024
 #define MEMORY_EMULATOR 65535
@@ -71,11 +74,13 @@ bool isAccumulator = false;
 
 bool toIgnore = false;
 bool isLineComment = false;
+bool directive_error = false;
 int code_index = 0;
 
 unsigned char *memory;
 unsigned char *code_address;
 
+DefineList *define_list;
 
 #define MNEMONICS_SIZE 	56
 const char* mnemonics[] = {
@@ -179,18 +184,39 @@ void proc_dcb(){
 }
 
 void proc_define(){
-	printf("Comando: DEFINE,");
 	int pos = 1;
+	char* name = NULL;
+	char* value = NULL;
+	
 	while(token != NULL){
 		token = strtok(NULL, " ");
 		switch(pos){
-			case 1:	printf(" Nome: %s,", token);
+			case 1:	name = token;
 					break;
-			case 2: printf(" Valor: %s\n", token);
+			case 2: value = token;
 					break;
+			default: if(token != NULL){
+						printerr("Invalid defined token");
+						directive_error = true;
+					 }
 		}
+		if(directive_error)
+			return;
+			
 		pos++;
 	}
+	
+	bool isNum = name[0] > 0x30 && name[0] <= 0x39;
+	bool isSymbol = false;
+	for(int i = 0; i < strlen(name); i++)
+		isSymbol = name[i] == '#' || name[i] == '$' || name[i] == ':' || isSymbol;
+		
+	if(isNum || isSymbol){
+		printerr("Invalid defined name");
+		directive_error = true;
+		return;
+	}
+	define_list = insert(define_list, name, value);
 }
 
 const char* opcodes[] = {
@@ -271,12 +297,14 @@ void reset_states(){
 	isLineComment = false;
 }
 
-void preprocessor(const char *filename){
+bool preprocessor(const char *filename){
 	FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Erro ao abrir o arquivo");
-        return;
+        return false;
     }
+    
+    define_list = begin();
     while (fgets(line, sizeof(line), file)){
     	format_line();
 		token = strtok(line, " ");
@@ -288,6 +316,7 @@ void preprocessor(const char *filename){
 	    		token = strtok(NULL, " ");
 	    		continue;
 			}
+			directive_error = false;
 			isDirective = true;
 			directive = token;
 			int i = 0;
@@ -298,14 +327,26 @@ void preprocessor(const char *filename){
 					break;	
 				}	
 			}
+			if(directive_error)
+				return false;
 			token = strtok(NULL, " ");
 		}
+		linenum++;
 	}
+	printf("Valores definidos: \n");
+	if(define_list != NULL)
+		show(define_list);
+	else
+		printf("\tNenhum: A lista de definicoes esta vazia!\n");
+		
+	return true;
 }
 
 void assembler(const char *filename) {
-	preprocessor(filename);
-	
+	bool isValid = false;
+	isValid = preprocessor(filename);
+	if(!isValid) return;
+		
 	memory = (unsigned char *) malloc(MEMORY_EMULATOR * sizeof(unsigned char));
 	if (memory == NULL) {
         printf("Erro ao alocar memória.\n");
@@ -314,7 +355,7 @@ void assembler(const char *filename) {
     
     // Definir o endereço base de código como 0x600
     code_address = memory + 0x600;
-	bool isValid = false;
+    linenum = 1;
 	    
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
@@ -366,6 +407,8 @@ void assembler(const char *filename) {
 	}
 	
     fclose(file);
+    if(define_list != NULL) 
+		freel(define_list);
 }
 
 bool generator(){
@@ -682,6 +725,11 @@ bool tokenizer(){
 			for(; i < MNEMONICS_SIZE; i++)
 				if(strcmp(mnemonics[i], mnemonic) == 0)
 					break;
+			
+			toIgnore = strcmp(mnemonic, "DEFINE") == 0;
+			if(toIgnore)
+				return true;
+				
 			if(i == MNEMONICS_SIZE){
 				printerr("Unknown mnemonic");
 				return false;

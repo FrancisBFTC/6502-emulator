@@ -1,6 +1,6 @@
-DEFINE NAME "Wenderson"
-DEFINE AGE 28
-DCB $01, $02
+; DEFINE NAME "Wenderson"
+; DEFINE AGE 28
+; DCB $01, $02
 
 adc 	$44
 sbc 	$44,x
