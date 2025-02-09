@@ -348,14 +348,18 @@ void proc_define(){
 			directive_error = true;
 			return;
 		}
-	}else if(value[0] != '$'){
-		strtol(&value[1], &endptr, 10);
+	}else{
+		strtol(&value[0], &endptr, 10);
 		if (*endptr != '\0') {
-			printerr("Invalid defined value - decimal error");
-			directive_error = true;
-			return;
+			char* definition = getdef(define_list, value);
+			if(definition == NULL){
+				printerr("Undefined value or decimal error");
+				directive_error = true;
+				return;
+			}
 		}
 	}
+	 
 	define_list = insertdef(define_list, name, value);
 }
 
