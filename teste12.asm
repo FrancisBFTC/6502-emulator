@@ -1,3 +1,8 @@
+DEFINE NAME $01
+DEFINE AGE 28
+DCB 1,$02,$102,258
+DCB $02,$00A,$04
+
 adc 	$44
 sbc 	$44,x
 jmp 	$a000

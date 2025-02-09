@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include "list.h"
 
 bool tokenizer(void);
 bool parser(void);
@@ -14,6 +15,15 @@ bool generator(void);
 void format_line(void);
 void format_operand(void);
 void reset_states(void);
+
+bool preprocessor(const char*);
+void assembler(const char*);
+void proc_define(void);
+void proc_dcb(void);
+void (*func_ptr)();
+
+void printerr(const char*);
+void printwarn(const char*);
 
 #define MAX_LINE_LENGTH 1024
 #define MEMORY_EMULATOR 65535
@@ -36,12 +46,14 @@ void reset_states(void);
 // -----------------------------------------------------
 
 char line[MAX_LINE_LENGTH];
+bool isDirective = false;
 bool isMnemonic = false;
 bool isLiteral = false;
 int linenum = 1;
 int number;
 int len;
 char *token;
+char *directive;
 char *mnemonic;
 char *operand;
 
@@ -63,11 +75,14 @@ bool isAccumulator = false;
 
 bool toIgnore = false;
 bool isLineComment = false;
+bool directive_error = false;
 int code_index = 0;
 
 unsigned char *memory;
 unsigned char *code_address;
 
+DefineList *define_list;
+DcbList *dcb_list;
 
 #define MNEMONICS_SIZE 	56
 const char* mnemonics[] = {
@@ -147,7 +162,118 @@ const char* mnemonics[] = {
 	"DEY",
 	"INY"
 };
-// OTHERS PRE-PROCESSING COMMANDS: DCB, DEFINE
+
+#define DIRECTIVES_SIZE 	2
+const char* directives[] = {
+	"DCB",
+	"DEFINE"
+};
+
+int* process[] = {
+	(int*)proc_dcb, (int*)proc_define
+};
+
+void proc_dcb(){
+	token = strtok(NULL, " ");
+	operand = token;
+	token = strtok(NULL, " ");
+	while(token != NULL)
+		format_operand();
+	
+	int i = 0;
+	int length = 0;
+	unsigned char* value = (unsigned char*) malloc(1);
+	bool isHexa = false;
+	bool isNum = false;
+	while(operand[i] != NULL){
+		isHexa = operand[i] == '$';
+		isNum = operand[i] >= 0x30 && operand[i] <= 0x39;
+		if(!isHexa && !isNum && operand[i] != ','){
+			directive_error = true;
+			printerr("Invalid defined value - use number");
+			return;
+		}
+		if(isHexa || isNum){
+			char val[4] = {0};
+			int j = 0;
+			if(isHexa) i = i + 1;
+			while(operand[i] != ',' && operand[i] != NULL)
+				val[j++] = operand[i++];
+			val[j] = 0;
+			
+			int num = (isHexa) ? strtol(val, &endptr, 16) : strtol(val, &endptr, 10);
+			if((j > 2 && isHexa) || (num > 255 && !isHexa))
+				printwarn("DCB byte is larger than 8-bit. Only low byte will be considered");
+		
+			value[length++] = (unsigned char) num & 0xFF;
+			value = (char*) realloc(value, length+1);
+			if (*endptr != '\0') {
+				directive_error = true;
+				printerr("Cannot parse the hexa number");
+				return;
+			}
+			continue;
+		}
+		i++;
+	}
+	dcb_list = insertdcb(dcb_list, linenum, length, value);
+	free(value);
+}
+
+void proc_define(){
+	int pos = 1;
+	char* name = NULL;
+	char* value = NULL;
+	
+	while(token != NULL){
+		token = strtok(NULL, " ");
+		switch(pos){
+			case 1:	name = token;
+					break;
+			case 2: value = token;
+					break;
+			default: if(token != NULL){
+						printerr("Invalid defined token");
+						directive_error = true;
+					 }
+		}
+		if(directive_error)
+			return;
+			
+		pos++;
+	}
+	
+	bool isNum = name[0] > 0x30 && name[0] <= 0x39;
+	bool isSymbol = false;
+	for(int i = 0; i < strlen(name); i++)
+		isSymbol = name[i] == '#' || name[i] == '$' || name[i] == ':' || isSymbol;
+		
+	if(isNum || isSymbol){
+		printerr("Invalid defined name");
+		directive_error = true;
+		return;
+	}
+	if(value[0] == '#'){
+		printerr("Invalid defined value - remove '#'");
+		directive_error = true;
+		return;
+	}else if(value[0] == '$'){
+		strtol(&value[1], &endptr, 16);
+		if (*endptr != '\0') {
+			printerr("Invalid defined value - hexa error");
+			directive_error = true;
+			return;
+		}
+	}else if(value[0] != '$'){
+		strtol(&value[1], &endptr, 10);
+		if (*endptr != '\0') {
+			printerr("Invalid defined value - decimal error");
+			directive_error = true;
+			return;
+		}
+	}
+	define_list = insertdef(define_list, name, value);
+}
 
 const char* opcodes[] = {
 	0x65, 0x25, 0x06, 0x24, 0x10, 0x30, 0x50, 0x70, 0x90, 0xB0, 0xD0, 0xF0,
@@ -192,11 +318,16 @@ void printerr(const char* msg){
 	printf("Error: Syntax error at line %d - %s.\n", linenum, msg);
 }
 
+void printwarn(const char* msg){
+	printf("Warning: at line %d - %s.\n", linenum, msg);
+}
+
 void error(const char* msg){
 	printf("%s: error at line %d - %s.\n", mnemonic, linenum, msg);
 }
 
 void format_line(){
+	line[strcspn(line, "\n")] = '\0';
 	for(int i = 0; i < strlen(line); i++){
 		if(line[i] == 0x09)
 			line[i] = 0x20;
@@ -226,7 +357,63 @@ void reset_states(){
 	isLineComment = false;
 }
 
+bool preprocessor(const char *filename){
+	FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Erro ao abrir o arquivo");
+        return false;
+    }
+    
+    define_list = begin_def();
+    dcb_list = begin_dcb();
+    while (fgets(line, sizeof(line), file)){
+    	format_line();
+		token = strtok(line, " ");
+		if(token == NULL || token[0] == ';') continue;
+		
+		while (token != NULL) {
+	    	isLineComment = token[0] == ';' || isLineComment;
+	    	if(isLineComment){
+	    		token = strtok(NULL, " ");
+	    		continue;
+			}
+			directive_error = false;
+			isDirective = true;
+			directive = token;
+			int i = 0;
+			for(; i < DIRECTIVES_SIZE; i++){
+				if(strcmp(directives[i], directive) == 0){
+					func_ptr = (void(*)())process[i];
+					func_ptr();
+					break;	
+				}	
+			}
+			if(directive_error)
+				return false;
+			token = strtok(NULL, " ");
+		}
+		linenum++;
+	}
+	printf("Valores definidos: \n");
+	if(define_list != NULL)
+		showdef(define_list);
+	else
+		printf("\tNenhum: A lista de definicoes esta vazia!\n");
+		
+	printf("Valores alocados: \n");
+	if(dcb_list != NULL)
+		showdcb(dcb_list);
+	else
+		printf("\tNenhum: A lista de alocacoes esta vazia!\n");
+		
+	return true;
+}
+
 void assembler(const char *filename) {
+	bool isValid = false;
+	isValid = preprocessor(filename);
+	if(!isValid) return;
+		
 	memory = (unsigned char *) malloc(MEMORY_EMULATOR * sizeof(unsigned char));
 	if (memory == NULL) {
         printf("Erro ao alocar memória.\n");
@@ -235,7 +422,7 @@ void assembler(const char *filename) {
     
     // Definir o endereço base de código como 0x600
     code_address = memory + 0x600;
-	bool isValid = false;
+    linenum = 1;
 	    
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
@@ -244,8 +431,7 @@ void assembler(const char *filename) {
     }
 
     while (fgets(line, sizeof(line), file)) {
-        line[strcspn(line, "\n")] = '\0';
-		
+    	
         // Análise Léxica
 		isValid = tokenizer();
         if(!isValid)
@@ -288,6 +474,10 @@ void assembler(const char *filename) {
 	}
 	
     fclose(file);
+    if(define_list != NULL) 
+		freedef(define_list);
+	if(dcb_list != NULL);
+		freedcb(dcb_list);
 }
 
 bool generator(){
@@ -604,6 +794,17 @@ bool tokenizer(){
 			for(; i < MNEMONICS_SIZE; i++)
 				if(strcmp(mnemonics[i], mnemonic) == 0)
 					break;
+			
+			toIgnore = strcmp(mnemonic, "DEFINE") == 0;
+			if(toIgnore)
+				return true;
+			
+			// Solução temporária antes da próxima branch
+			if(strcmp(mnemonic, "DCB") == 0){
+				toIgnore = true;
+				return true;
+			}
+				
 			if(i == MNEMONICS_SIZE){
 				printerr("Unknown mnemonic");
 				return false;
