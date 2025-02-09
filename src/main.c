@@ -25,6 +25,7 @@ void (*func_ptr)();
 
 void printerr(const char*);
 void printwarn(const char*);
+bool recursive_def(char*);
 
 #define MAX_LINE_LENGTH 1024
 #define MEMORY_EMULATOR 65535
@@ -349,14 +350,11 @@ void proc_define(){
 			return;
 		}
 	}else{
-		strtol(&value[0], &endptr, 10);
-		if (*endptr != '\0') {
-			char* definition = getdef(define_list, value);
-			if(definition == NULL){
-				printerr("Undefined value or decimal error");
-				directive_error = true;
-				return;
-			}
+		if(!recursive_def(value)) {
+			++linenum;
+			printerr("Undefined value or decimal error");
+			directive_error = true;
+			return;
 		}
 	}
 	 
@@ -371,6 +369,18 @@ bool dcb_process(){
 		return true;
 	}
 	return false;
+}
+
+bool recursive_def(char* value){
+	strtol(&value[0], &endptr, 10);
+	if (*endptr != '\0') {
+		char* definition = getdef(define_list, value);
+		if(definition == NULL)
+			return false;
+		strcpy(value, definition);
+		return recursive_def(value);
+	}
+	return true;	
 }
 
 bool preprocessor(const char *filename){
@@ -410,19 +420,6 @@ bool preprocessor(const char *filename){
 		}
 		linenum++;
 	}
-	/*
-	printf("Valores definidos: \n");
-	if(define_list != NULL)
-		showdef(define_list);
-	else
-		printf("\tNenhum: A lista de definicoes esta vazia!\n");
-		
-	printf("Valores alocados: \n");
-	if(dcb_list != NULL)
-		showdcb(dcb_list);
-	else
-		printf("\tNenhum: A lista de alocacoes esta vazia!\n");
-	*/
 		
 	return true;
 }
@@ -477,6 +474,9 @@ void assembler(const char *filename) {
         exit(EXIT_FAILURE);
 	}
 	
+	if(define_list != NULL)
+		showdef(define_list);
+		
 	if(isValid){
 		unsigned short address = 0x600;
 		printf("Code Length: %d\n", code_index);
@@ -826,8 +826,7 @@ bool tokenizer(){
 				printerr("Unknown mnemonic");
 				return false;
 			}
-				
-			// Solução temporária antes da próxima branch
+			
 			if(i == 56)
 				break;
 		}
