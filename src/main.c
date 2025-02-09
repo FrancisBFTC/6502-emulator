@@ -23,6 +23,7 @@ void proc_dcb(void);
 void (*func_ptr)();
 
 void printerr(const char*);
+void printwarn(const char*);
 
 #define MAX_LINE_LENGTH 1024
 #define MEMORY_EMULATOR 65535
@@ -81,6 +82,7 @@ unsigned char *memory;
 unsigned char *code_address;
 
 DefineList *define_list;
+DcbList *dcb_list;
 
 #define MNEMONICS_SIZE 	56
 const char* mnemonics[] = {
@@ -172,15 +174,39 @@ int* process[] = {
 };
 
 void proc_dcb(){
-	printf("Comando: DCB,");
-	printf(" Bytes: ");
-	int pos = 1;
-	while(token != NULL){
-		token = strtok(NULL, " ");
-		printf("%s", token);
-		pos++;
+	printf("Comando: DCB\n");
+	token = strtok(NULL, " ");
+	operand = token;
+	token = strtok(NULL, " ");
+	while(token != NULL)
+		format_operand();
+	
+	int i = 0;
+	int length = 0;
+	char* value = (char*) malloc(1);
+	while(operand[i] != NULL){
+		if(operand[i] == '$'){
+			char val[3] = {0};
+			int j = 0;
+			i = i + 1;
+			while(operand[i] != ',' && operand[i] != NULL && j < 3)
+				val[j++] = operand[i++];
+			if(j > 2)
+				printwarn("DCB byte is larger than 8-bit. Only low byte will be considered");
+			val[j] = 0;
+			value[length++] = (char) strtol(val, &endptr, 16) & 0xFF;
+			value = (char*) realloc(value, length+1);
+			if (*endptr != '\0') {
+				directive_error = true;
+				printerr("Cannot parse the hexa number");
+				return;
+			}
+			continue;
+		}
+		i++;
 	}
-	printf("\n");
+	dcb_list = insertdcb(dcb_list, linenum, length, value);
+	free(value);
 }
 
 void proc_define(){
@@ -216,7 +242,7 @@ void proc_define(){
 		directive_error = true;
 		return;
 	}
-	define_list = insert(define_list, name, value);
+	define_list = insertdef(define_list, name, value);
 }
 
 const char* opcodes[] = {
@@ -262,6 +288,10 @@ void printerr(const char* msg){
 	printf("Error: Syntax error at line %d - %s.\n", linenum, msg);
 }
 
+void printwarn(const char* msg){
+	printf("Warning: at line %d - %s.\n", linenum, msg);
+}
+
 void error(const char* msg){
 	printf("%s: error at line %d - %s.\n", mnemonic, linenum, msg);
 }
@@ -304,7 +334,8 @@ bool preprocessor(const char *filename){
         return false;
     }
     
-    define_list = begin();
+    define_list = begin_def();
+    dcb_list = begin_dcb();
     while (fgets(line, sizeof(line), file)){
     	format_line();
 		token = strtok(line, " ");
@@ -335,9 +366,15 @@ bool preprocessor(const char *filename){
 	}
 	printf("Valores definidos: \n");
 	if(define_list != NULL)
-		show(define_list);
+		showdef(define_list);
 	else
 		printf("\tNenhum: A lista de definicoes esta vazia!\n");
+		
+	printf("Valores alocados: \n");
+	if(dcb_list != NULL)
+		showdcb(dcb_list);
+	else
+		printf("\tNenhum: A lista de alocacoes esta vazia!\n");
 		
 	return true;
 }
@@ -408,7 +445,9 @@ void assembler(const char *filename) {
 	
     fclose(file);
     if(define_list != NULL) 
-		freel(define_list);
+		freedef(define_list);
+	if(dcb_list != NULL);
+		freedcb(dcb_list);
 }
 
 bool generator(){
@@ -729,6 +768,12 @@ bool tokenizer(){
 			toIgnore = strcmp(mnemonic, "DEFINE") == 0;
 			if(toIgnore)
 				return true;
+			
+			// Solução temporária antes da próxima branch
+			if(strcmp(mnemonic, "DCB") == 0){
+				toIgnore = true;
+				return true;
+			}
 				
 			if(i == MNEMONICS_SIZE){
 				printerr("Unknown mnemonic");
