@@ -174,7 +174,6 @@ int* process[] = {
 };
 
 void proc_dcb(){
-	printf("Comando: DCB\n");
 	token = strtok(NULL, " ");
 	operand = token;
 	token = strtok(NULL, " ");
@@ -183,18 +182,30 @@ void proc_dcb(){
 	
 	int i = 0;
 	int length = 0;
-	char* value = (char*) malloc(1);
+	unsigned char* value = (unsigned char*) malloc(1);
+	bool isHexa = false;
+	bool isNum = false;
 	while(operand[i] != NULL){
-		if(operand[i] == '$'){
-			char val[3] = {0};
+		isHexa = operand[i] == '$';
+		isNum = operand[i] >= 0x30 && operand[i] <= 0x39;
+		if(!isHexa && !isNum && operand[i] != ','){
+			directive_error = true;
+			printerr("Invalid defined value - use number");
+			return;
+		}
+		if(isHexa || isNum){
+			char val[4] = {0};
 			int j = 0;
-			i = i + 1;
-			while(operand[i] != ',' && operand[i] != NULL && j < 3)
+			if(isHexa) i = i + 1;
+			while(operand[i] != ',' && operand[i] != NULL)
 				val[j++] = operand[i++];
-			if(j > 2)
-				printwarn("DCB byte is larger than 8-bit. Only low byte will be considered");
 			val[j] = 0;
-			value[length++] = (char) strtol(val, &endptr, 16) & 0xFF;
+			
+			int num = (isHexa) ? strtol(val, &endptr, 16) : strtol(val, &endptr, 10);
+			if((j > 2 && isHexa) || (num > 255 && !isHexa))
+				printwarn("DCB byte is larger than 8-bit. Only low byte will be considered");
+		
+			value[length++] = (unsigned char) num & 0xFF;
 			value = (char*) realloc(value, length+1);
 			if (*endptr != '\0') {
 				directive_error = true;
@@ -241,6 +252,25 @@ void proc_define(){
 		printerr("Invalid defined name");
 		directive_error = true;
 		return;
+	}
+	if(value[0] == '#'){
+		printerr("Invalid defined value - remove '#'");
+		directive_error = true;
+		return;
+	}else if(value[0] == '$'){
+		strtol(&value[1], &endptr, 16);
+		if (*endptr != '\0') {
+			printerr("Invalid defined value - hexa error");
+			directive_error = true;
+			return;
+		}
+	}else if(value[0] != '$'){
+		strtol(&value[1], &endptr, 10);
+		if (*endptr != '\0') {
+			printerr("Invalid defined value - decimal error");
+			directive_error = true;
+			return;
+		}
 	}
 	define_list = insertdef(define_list, name, value);
 }

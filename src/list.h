@@ -10,7 +10,7 @@ typedef struct node_def DefineList;
 struct node_dcb {
 	int line;
 	int length;
-	char* value;
+	unsigned char* value;
 	struct node_dcb * next;
 };
 typedef struct node_dcb DcbList;
@@ -91,7 +91,7 @@ char* getdef(DefineList *list, char* name){
 }
 
 // get the value
-int* getdcb(DcbList *list, int line){
+char* getdcb(DcbList *list, int line){
 	for(DcbList *li = list; li != NULL; li = li->next)
 		if(li->line == line)
 			return li->value;
