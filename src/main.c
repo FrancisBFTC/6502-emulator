@@ -351,7 +351,7 @@ void proc_define(){
 		}
 	}else{
 		if(!recursive_def(value)) {
-			++linenum;
+			//++linenum;
 			printerr("Undefined value or decimal error");
 			directive_error = true;
 			return;
@@ -372,7 +372,10 @@ bool dcb_process(){
 }
 
 bool recursive_def(char* value){
-	strtol(&value[0], &endptr, 10);
+	if(value[0] != '$')
+		strtol(&value[0], &endptr, 10);
+	else
+		strtol(&value[1], &endptr, 16);
 	if (*endptr != '\0') {
 		char* definition = getdef(define_list, value);
 		if(definition == NULL)
@@ -381,6 +384,50 @@ bool recursive_def(char* value){
 		return recursive_def(value);
 	}
 	return true;	
+}
+
+void replace(char* token, const char* old_substr, const char* new_substr){
+	char buffer[256];
+	char* pos;
+	int old_len = strlen(old_substr);
+	int new_len = strlen(new_substr);
+	
+	pos = strstr(token, old_substr);
+	if(pos != NULL){
+		int prefix_len = pos - token;
+		strncpy(buffer, token, prefix_len);
+		buffer[prefix_len] = '\0';
+		
+		strcat(buffer, new_substr);
+		strcat(buffer, pos + old_len);
+		strcpy(token, buffer);
+	}
+}
+
+bool check_definition(){
+	int index = 0;
+	while(token[index] == '#' || token[index] == '$') index++;
+	int namelen = strcspn(&token[index], ",");
+	char name[namelen+1];
+	memcpy(name, &token[index], namelen);
+	name[namelen] = 0;
+	strtol(&name[0], &endptr, 10);
+	if(*endptr != '\0'){
+		strtol(&name[0], &endptr, 16);
+		if(*endptr != '\0'){
+			char* value = getdef(define_list, name);
+			if(value == NULL){
+				printerr("Undefined value");
+				return false;
+			}
+			// Fazer substituição aqui...
+			printf("Name Token: '%s', Value Token: %s\n", name, value);
+			replace(token, name, value);
+			printf("Token modificado: %s\n", token);
+		}
+	}
+
+	return true;
 }
 
 bool preprocessor(const char *filename){
@@ -793,13 +840,16 @@ bool tokenizer(){
         	count_tok++;
     		continue;
 		}
+		
+		if(strcmp(token, "DEFINE") != 0 && strcmp(token, "DCB") != 0 && count_tok > 0)
+			if(!check_definition())
+				return false;
 			
 		if(token[0] == '#'){
 	        if(token[1] == '$'){
 	        	if(!setstate(true, false, false)) return false;
 			}else{
-				printerr("Operand should be a hexa number");
-				return false;
+				//Setar variável isDecimal	
 			}
 		}else if(token[0] == '$'){
 				if(!setstate(false, false, false)) return false;
