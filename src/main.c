@@ -60,6 +60,7 @@ char *mnemonic;
 char *operand;
 
 int mnemonic_index = 0;
+int isDefinition = 0;
 
 char dest[50];
 char *endptr;
@@ -386,11 +387,11 @@ bool recursive_def(char* value){
 	return true;	
 }
 
-void replace(char* token, const char* old_substr, const char* new_substr){
-	char buffer[256];
+char* replace(char* token, const char* old_substr, const char* new_substr){
 	char* pos;
 	int old_len = strlen(old_substr);
 	int new_len = strlen(new_substr);
+	char* buffer = (char*) malloc(strlen(token) + new_len);
 	
 	pos = strstr(token, old_substr);
 	if(pos != NULL){
@@ -400,11 +401,12 @@ void replace(char* token, const char* old_substr, const char* new_substr){
 		
 		strcat(buffer, new_substr);
 		strcat(buffer, pos + old_len);
-		strcpy(token, buffer);
+		//strcpy(token, buffer);
 	}
+	return buffer;
 }
 
-bool check_definition(){
+int check_definition(){
 	int index = 0;
 	while(token[index] == '#' || token[index] == '$') index++;
 	int namelen = strcspn(&token[index], ",");
@@ -418,16 +420,30 @@ bool check_definition(){
 			char* value = getdef(define_list, name);
 			if(value == NULL){
 				printerr("Undefined value");
-				return false;
+				return -1;
 			}
 			// Fazer substituição aqui...
 			printf("Name Token: '%s', Value Token: %s\n", name, value);
-			replace(token, name, value);
-			printf("Token modificado: %s\n", token);
+			token = replace(token, name, value);
+			printf("Token modificado: '%s'\n", token);
+			return 1;
+		}else{
+			if((!index && token[index] != '$') || (token[index-1] == '#' && index)){
+				char* value = getdef(define_list, name);
+				if(value == NULL){
+					printerr("Undefined value - possible hexa error (missing prefix)");
+					return -1;
+				}
+				// Fazer substituição aqui...
+				printf("Name Token: '%s', Value Token: %s\n", name, value);
+				token = replace(token, name, value);
+				printf("Token modificado: '%s'\n", token);
+				return 1;
+			}
 		}
 	}
 
-	return true;
+	return 0;
 }
 
 bool preprocessor(const char *filename){
@@ -512,6 +528,10 @@ void assembler(const char *filename) {
 		isValid = generator();
 		if(!isValid)
         	break;
+		
+		// Liberação de alocação temporária
+		if(isDefinition) 
+			free(token);
 			
         linenum++;
     }
@@ -828,6 +848,7 @@ bool tokenizer(){
 	int i = 0;
 	int count_tok = 0;
 	reset_states();
+	isDefinition = 0;
 	
     while (token != NULL) {
     	isLineComment = token[0] == ';' || isLineComment;
@@ -841,9 +862,12 @@ bool tokenizer(){
     		continue;
 		}
 		
-		if(strcmp(token, "DEFINE") != 0 && strcmp(token, "DCB") != 0 && count_tok > 0)
-			if(!check_definition())
+		if(strcmp(token, "DEFINE") != 0 && strcmp(token, "DCB") != 0 && count_tok > 0){
+			isDefinition = check_definition();
+			if(isDefinition == -1)
 				return false;
+		}
+			
 			
 		if(token[0] == '#'){
 	        if(token[1] == '$'){
@@ -880,7 +904,7 @@ bool tokenizer(){
 			if(i == 56)
 				break;
 		}
-        	
+			
         token = strtok(NULL, " ");
         count_tok++;
     }
