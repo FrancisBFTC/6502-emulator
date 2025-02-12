@@ -391,7 +391,8 @@ char* replace(char* token, const char* old_substr, const char* new_substr){
 	char* pos;
 	int old_len = strlen(old_substr);
 	int new_len = strlen(new_substr);
-	char* buffer = (char*) malloc(strlen(token) + new_len);
+	int buf_len = strlen(token) + (new_len - old_len);
+	char* buffer = (char*) malloc(buf_len);
 	
 	pos = strstr(token, old_substr);
 	if(pos != NULL){
@@ -401,9 +402,11 @@ char* replace(char* token, const char* old_substr, const char* new_substr){
 		
 		strcat(buffer, new_substr);
 		strcat(buffer, pos + old_len);
-		//strcpy(token, buffer);
+		buffer[buf_len] = '\0';
+		
+		return buffer;
 	}
-	return buffer;
+	return NULL;
 }
 
 int check_definition(){
@@ -773,10 +776,11 @@ bool parse_addressing(int index){
 							return false;
 						}
 						
+						int op_int = atoi(op);
 						bool isRegisterX = (operand[i] == 'X' || operand[i] == 'x');
 						bool isRegisterY = (operand[i] == 'Y' || operand[i] == 'y');
-						bool is8bit = (count <= 2 && !isDecimal) || (atoi(op) < 256 && isDecimal);
-						bool is16bit = ((count > 2 && count < 5) && !isDecimal) || ((atoi(op) > 255 && atoi(op) < 65536) && isDecimal);
+						bool is8bit = (count <= 2 && !isDecimal) || (op_int < 256 && isDecimal);
+						bool is16bit = ((count > 2 && count < 5) && !isDecimal) || ((op_int > 255 && op_int < 65536) && isDecimal);
 						indirectX = isRegisterX && is8bit && !isParenthesisValid && isIndirect;
 						indirectY = isRegisterY && is8bit && isParenthesisValid && isIndirect;
 						isZeroPageX = isRegisterX && is8bit && !isIndirect;
@@ -794,6 +798,8 @@ bool parse_addressing(int index){
 					if(operand[i] == ')' && isIndirect)
 						isParenthesisValid = true;
 				}
+				if(i == operand_len)	break;
+
 				if(operand[i+1] == ')'){
 					if(operand[i+2] != NULL && operand[i+2] != ';'){
 						printerr("Invalid operand");
@@ -828,9 +834,6 @@ bool parse_addressing(int index){
 			return false;
 		}
 	
-	//if(isIndirect)
-	//	memcpy(dest, &op[index], count+1);
-	//else
 		memcpy(dest, op, count+1);
 	return true;	
 }
@@ -870,7 +873,10 @@ bool tokenizer(){
     	if(count_tok >= 2){
     		format_operand();
         	count_tok++;
-    		continue;
+        	if(token != NULL)
+        		continue;
+    		token = operand;
+    		isMnemonic = true;
 		}
 		
 		if(strcmp(token, "DEFINE") != 0 && strcmp(token, "DCB") != 0 && count_tok > 0){
