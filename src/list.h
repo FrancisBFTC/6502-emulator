@@ -91,10 +91,10 @@ char* getdef(DefineList *list, char* name){
 }
 
 // get the value
-char* getdcb(DcbList *list, int line){
+DcbList* getdcb(DcbList *list, int line){
 	for(DcbList *li = list; li != NULL; li = li->next)
 		if(li->line == line)
-			return li->value;
+			return li;
 			
 	return NULL;
 }
