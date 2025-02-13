@@ -76,6 +76,8 @@ bool isAbsoluteX = false;
 bool isAbsoluteY = false;
 bool isAccumulator = false;
 
+bool isDecimal = false;
+
 bool toIgnore = false;
 bool isLineComment = false;
 bool directive_error = false;
@@ -373,10 +375,8 @@ bool dcb_process(){
 }
 
 bool recursive_def(char* value){
-	if(value[0] != '$')
-		strtol(&value[0], &endptr, 10);
-	else
-		strtol(&value[1], &endptr, 16);
+	int base = (value[0] != '$') ? 10 : 16;
+	strtol(&value[base >> 4], &endptr, base);
 	if (*endptr != '\0') {
 		char* definition = getdef(define_list, value);
 		if(definition == NULL)
@@ -391,7 +391,8 @@ char* replace(char* token, const char* old_substr, const char* new_substr){
 	char* pos;
 	int old_len = strlen(old_substr);
 	int new_len = strlen(new_substr);
-	char* buffer = (char*) malloc(strlen(token) + new_len);
+	int buf_len = strlen(token) + (new_len - old_len);
+	char* buffer = (char*) malloc(buf_len);
 	
 	pos = strstr(token, old_substr);
 	if(pos != NULL){
@@ -401,17 +402,23 @@ char* replace(char* token, const char* old_substr, const char* new_substr){
 		
 		strcat(buffer, new_substr);
 		strcat(buffer, pos + old_len);
-		//strcpy(token, buffer);
+		buffer[buf_len] = '\0';
+		
+		return buffer;
 	}
-	return buffer;
+	return NULL;
 }
 
 int check_definition(){
 	int index = 0;
-	while(token[index] == '#' || token[index] == '$') index++;
+	while(token[index] == '#' || token[index] == '$' || token[index] == '(') index++;
 	int namelen = strcspn(&token[index], ",");
 	char name[namelen+1];
 	memcpy(name, &token[index], namelen);
+	if(name[namelen-1] == ')'){
+		name[namelen-1] = '\0';
+		namelen -= 1;
+	}
 	name[namelen] = 0;
 	strtol(&name[0], &endptr, 10);
 	if(*endptr != '\0'){
@@ -423,9 +430,9 @@ int check_definition(){
 				return -1;
 			}
 			// Fazer substituição aqui...
-			printf("Name Token: '%s', Value Token: %s\n", name, value);
+			//printf("Name Token: '%s', Value Token: %s\n", name, value);
 			token = replace(token, name, value);
-			printf("Token modificado: '%s'\n", token);
+			//printf("Token modificado: '%s'\n", token);
 			return 1;
 		}else{
 			if((!index && token[index] != '$') || (token[index-1] == '#' && index)){
@@ -435,9 +442,9 @@ int check_definition(){
 					return -1;
 				}
 				// Fazer substituição aqui...
-				printf("Name Token: '%s', Value Token: %s\n", name, value);
+				//printf("Name Token: '%s', Value Token: %s\n", name, value);
 				token = replace(token, name, value);
-				printf("Token modificado: '%s'\n", token);
+				//printf("Token modificado: '%s'\n", token);
 				return 1;
 			}
 		}
@@ -541,8 +548,8 @@ void assembler(const char *filename) {
         exit(EXIT_FAILURE);
 	}
 	
-	if(define_list != NULL)
-		showdef(define_list);
+	//if(define_list != NULL)
+	//	showdef(define_list);
 		
 	if(isValid){
 		unsigned short address = 0x600;
@@ -697,7 +704,7 @@ bool parser(){
 			if(!parsing_operand(2))
         		return false;
         			
-			if(len > 2){
+			if((len > 2 && !isDecimal) || (number > 255 && isDecimal)){
 				printerr("Exceeded the 8-bit limit for literal");
 				return false;
 			}
@@ -706,11 +713,9 @@ bool parser(){
 			if(!parsing_operand(1))
         		return false;
         		
-			if(len <= 2){
-				// Zero page
+			if((len <= 2 && !isDecimal) || (number < 256 && isDecimal)){
 				isZeroPage = true;
-			}else if(len < 5){
-				// Absolute
+			}else if((len < 5 && !isDecimal) || (number < 65536 && isDecimal)){
 				isAbsolute = true;
 			}else{
 				printerr("Exceeded the 16-bit limit for address");
@@ -732,19 +737,25 @@ bool parse_addressing(int index){
 		char op[50] = {0};
 		bool isParenthesisValid = false;
 		int operand_len = strlen(operand);
-		int i = (operand[0] == '(') ? index + 1 : index;
+			
 		int count = 0;
+		int i = (operand[0] == '(') ? index + 1 : index;
 		
+		if(isDecimal) --i;
+		
+			
+		/*
 		if(isIndirect && operand[index] != '$'){
 			printerr("Incorrect indirect number - insert '$'");
 			return false;
 		}
+		*/
+		
 		for(; i < operand_len; i++){
 			if(operand[i] != ',' && operand[i] != ')'){
 				if(operand[i] == ';')	
 					break;
-				op[i-index] = operand[i];
-				count++;
+				op[count++] = operand[i];
 			}else{
 				if(isLiteral){
 					printerr("Incorrect immediate addressing");
@@ -765,14 +776,17 @@ bool parse_addressing(int index){
 							return false;
 						}
 						
+						int op_int = atoi(op);
 						bool isRegisterX = (operand[i] == 'X' || operand[i] == 'x');
 						bool isRegisterY = (operand[i] == 'Y' || operand[i] == 'y');
-						indirectX = isRegisterX && count <= 2 && !isParenthesisValid && isIndirect;
-						indirectY = isRegisterY && count <= 2 && isParenthesisValid && isIndirect;
-						isZeroPageX = isRegisterX && count <= 2 && !isIndirect;
-						isZeroPageY = isRegisterY && count <= 2 && !isIndirect;
-						isAbsoluteX = isRegisterX && count > 2 && count < 5 && !isIndirect;
-						isAbsoluteY = isRegisterY && count > 2 && count < 5 && !isIndirect;
+						bool is8bit = (count <= 2 && !isDecimal) || (op_int < 256 && isDecimal);
+						bool is16bit = ((count > 2 && count < 5) && !isDecimal) || ((op_int > 255 && op_int < 65536) && isDecimal);
+						indirectX = isRegisterX && is8bit && !isParenthesisValid && isIndirect;
+						indirectY = isRegisterY && is8bit && isParenthesisValid && isIndirect;
+						isZeroPageX = isRegisterX && is8bit && !isIndirect;
+						isZeroPageY = isRegisterY && is8bit && !isIndirect;
+						isAbsoluteX = isRegisterX && is16bit && !isIndirect;
+						isAbsoluteY = isRegisterY && is16bit && !isIndirect;
 						
 						if(!indirectY && !indirectX && isIndirect){
 							printerr("Invalid indirect addressing");
@@ -784,6 +798,8 @@ bool parse_addressing(int index){
 					if(operand[i] == ')' && isIndirect)
 						isParenthesisValid = true;
 				}
+				if(i == operand_len)	break;
+
 				if(operand[i+1] == ')'){
 					if(operand[i+2] != NULL && operand[i+2] != ';'){
 						printerr("Invalid operand");
@@ -818,20 +834,18 @@ bool parse_addressing(int index){
 			return false;
 		}
 	
-	if(isIndirect)
-		memcpy(dest, &op[index], count+1);
-	else
 		memcpy(dest, op, count+1);
 	return true;	
 }
 
 bool parsing_operand(int index){
 	if(!parse_addressing(index)) return false;
-	number = strtol(dest, &endptr, 16);
+	int base = (isDecimal) ? 10 : 16;
+	number = strtol(dest, &endptr, base);
 	len = strlen(dest);
-
+	
 	if (*endptr != '\0') {
-		printerr("Cannot parse the hexa number");
+		printerr("Cannot parse the hexa or decimal number");
 		return false;
 	}
 	
@@ -859,7 +873,10 @@ bool tokenizer(){
     	if(count_tok >= 2){
     		format_operand();
         	count_tok++;
-    		continue;
+        	if(token != NULL)
+        		continue;
+    		token = operand;
+    		isMnemonic = true;
 		}
 		
 		if(strcmp(token, "DEFINE") != 0 && strcmp(token, "DCB") != 0 && count_tok > 0){
@@ -867,20 +884,23 @@ bool tokenizer(){
 			if(isDefinition == -1)
 				return false;
 		}
-			
+		
 			
 		if(token[0] == '#'){
-	        if(token[1] == '$'){
-	        	if(!setstate(true, false, false)) return false;
-			}else{
-				//Setar variável isDecimal	
-			}
+			isDecimal = (token[1] != '$');
+			if(!setstate(true, false, false)) return false;
 		}else if(token[0] == '$'){
+				isDecimal = false;
 				if(!setstate(false, false, false)) return false;
 		}else if(token[0] == '('){
+				isDecimal = (token[1] != '$');
 				if(!setstate(false, true, false)) return false;
 		}else if(strcmp(token, "A") == 0 && isMnemonic){
+				isDecimal = false;
 				if(!setstate(false, false, true)) return false;
+		}else if(token[0] >= 0x30 && token[0] <= 0x39){
+				isDecimal = true;
+				if(!setstate(false, false, false)) return false;
 		}else{
 			if(isMnemonic){
 				printerr("Invalid operand");
