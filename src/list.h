@@ -15,6 +15,24 @@ struct node_dcb {
 };
 typedef struct node_dcb DcbList;
 
+// 3th list node
+struct node_refs {
+	int addr;
+	struct node_refs * next;
+};
+typedef struct node_refs RefsAddr;
+
+// 4th list node
+struct node_lab {
+	int line;
+	int addr;
+	char name[256];
+	RefsAddr * refs;
+	struct node_lab * next;
+};
+typedef struct node_lab LabelList;
+
+
 // DAT/TAD: Data Abstract Type Begin
 // -----------------------------------------------------------------
 // Initialize the list
@@ -24,6 +42,11 @@ DefineList* begin_def(){
 
 // Initialize the list
 DcbList* begin_dcb(){
+	return NULL;
+}
+
+// Initialize the list
+LabelList* begin_lab(){
 	return NULL;
 }
 
@@ -47,30 +70,15 @@ DcbList* insertdcb(DcbList* list, int line, int length, char* value){
 	return new_node;
 }
 
-// Remove a node at begin or mid the list
-/*
-DefineList* remove(DefineList *list, int id){
-	Node *previous = NULL;			// Pointer to previous node
-	Node *aux = list;				// Pointer to list
-	
-	// search the node and store the previous node
-	while(aux != NULL && aux->id != id){
-		previous = aux;
-		aux = aux->next;
-	}
-	
-	if(aux == NULL) return list; 	// if not found, return the original
-									// but if found ...
-									
-	if(previous == NULL)			// begin of list point to the next
-		list = aux->next;			// remove on the begin of list
-	else							// previous point to the next
-		previous->next = aux->next;	// remove on the mid of list
-	
-	free(aux); 			// Free memory space (remove the node)
-	return list;
+// Insert a new node
+LabelList* insertlab(LabelList* list, int line, char name[], int addr){
+	LabelList *new_node = (LabelList*) malloc(sizeof(LabelList));
+	strcpy(new_node->name, name);
+	new_node->line = line;
+	new_node->addr = addr;
+	new_node->next = list;
+	return new_node;
 }
-*/
 
 // search the node
 DefineList* search(DefineList *list, char* name){
@@ -99,6 +107,24 @@ DcbList* getdcb(DcbList *list, int line){
 	return NULL;
 }
 
+// get the value
+LabelList* getLabelByLine(LabelList *list, int line){
+	for(LabelList *li = list; li != NULL; li = li->next)
+		if(li->line == line)
+			return li;
+			
+	return NULL;
+}
+
+// get the value
+LabelList* getLabelByName(LabelList *list, char name[]){
+	for(LabelList *li = list; li != NULL; li = li->next)
+		if(strcmp(li->name, name) == 0)
+			return li;
+			
+	return NULL;
+}
+
 // show each node the list
 void showdef(DefineList *list){
 	for(DefineList *li = list; li != NULL; li = li->next)
@@ -114,6 +140,12 @@ void showdcb(DcbList *list){
 			printf("%d,", li->value[i]);
 		printf("\n");
 	}
+}
+
+// show each node the list
+void showlab(LabelList *list){
+	for(LabelList *li = list; li != NULL; li = li->next)
+		printf("name = %s, addr = 0x%X, line = %d\n", li->name, li->addr, li->line);
 }
 
 // free the define list
@@ -134,6 +166,17 @@ void freedcb(DcbList *list){
 	while(aux != NULL){
 		DcbList *next_node = aux->next;
 		free(aux->value);
+		free(aux);
+		aux = next_node;
+	}
+}
+
+// free the define list
+void freelab(LabelList *list){
+	LabelList *aux = list;
+	
+	while(aux != NULL){
+		LabelList *next_node = aux->next;
 		free(aux);
 		aux = next_node;
 	}

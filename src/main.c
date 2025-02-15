@@ -58,6 +58,7 @@ char *token;
 char *directive;
 char *mnemonic;
 char *operand;
+char *label;
 
 int mnemonic_index = 0;
 int isDefinition = 0;
@@ -88,6 +89,7 @@ unsigned char *code_address;
 
 DefineList *define_list;
 DcbList *dcb_list;
+LabelList *label_list;
 
 #define MNEMONICS_SIZE 	57
 const char* mnemonics[] = {
@@ -453,6 +455,26 @@ int check_definition(){
 	return 0;
 }
 
+int get_directive(){
+	for(int i = 0; i < DIRECTIVES_SIZE; i++){
+		if(strcmp(directives[i], token) == 0){
+			func_ptr = (void(*)())process[i];
+			func_ptr();
+			return i;	
+		}	
+	}
+	return -1;	
+}
+
+int get_mnemonic(){
+	for(int i = 0; i < MNEMONICS_SIZE; i++){
+		if(strcmp(mnemonics[i], token) == 0){
+			return i;
+		}	
+	}
+	return -1;
+}
+
 bool preprocessor(const char *filename){
 	FILE *file = fopen(filename, "r");
     if (file == NULL) {
@@ -462,9 +484,15 @@ bool preprocessor(const char *filename){
     
     define_list = begin_def();
     dcb_list = begin_dcb();
+    label_list = begin_lab();
     while (fgets(line, sizeof(line), file)){
     	format_line();
+    	
+    	int i = 0;
+    	for(; line[i] == ' '; i++);
+    	int length = strcspn(&line[i], ":");
 		token = strtok(line, " ");
+		
 		if(token == NULL || token[0] == ';') continue;
 		
 		while (token != NULL) {
@@ -473,23 +501,52 @@ bool preprocessor(const char *filename){
 	    		token = strtok(NULL, " ");
 	    		continue;
 			}
+			
 			directive_error = false;
-			isDirective = true;
-			directive = token;
-			int i = 0;
-			for(; i < DIRECTIVES_SIZE; i++){
-				if(strcmp(directives[i], directive) == 0){
-					func_ptr = (void(*)())process[i];
-					func_ptr();
-					break;	
+			isDirective = false;
+			isMnemonic = false;
+			if(get_directive() == -1){
+				if(get_mnemonic() == -1){
+					label = token;
+					while(token != NULL){
+						int pos = strcspn(&label[0], ":");
+						if(label[pos] == ':'){
+							token = strtok(NULL, " ");
+							if(token != NULL || label[pos+1] != NULL){
+								printerr("Invalid label name - incorrect char");
+								return false;
+							}
+							label[pos] = '\0';
+							label_list = insertlab(label_list, linenum, label, 0x0000);
+							label_list->refs = NULL;
+						}else{
+							token = strtok(NULL, " ");
+							if(token != NULL){
+								strcat(label, &token[0]);
+								int x = (strlen(label) == length) ? 1 : 0;
+								if(strcmp(token-x, ":") != 0){
+									printerr("Invalid label name - incorrect char");
+									return false;
+								}
+							}else{
+								printerr("Invalid label name - missing ':'");
+								return false;
+							}
+						}	
+					}
+					
+					continue;
 				}	
-			}
-			if(directive_error)
-				return false;
+			}else if(directive_error)
+					return false;
+					
 			token = strtok(NULL, " ");
 		}
 		linenum++;
 	}
+	
+	if(label_list != NULL)
+		showlab(label_list);
 		
 	return true;
 }
@@ -508,7 +565,7 @@ void assembler(const char *filename) {
     // Definir o endereço base de código como 0x600
     code_address = memory + 0x600;
     linenum = 1;
-	    
+	
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Erro ao abrir o arquivo");
@@ -547,9 +604,6 @@ void assembler(const char *filename) {
 		perror("Error: The maximum program size is 2560 bytes.");
         exit(EXIT_FAILURE);
 	}
-	
-	//if(define_list != NULL)
-	//	showdef(define_list);
 		
 	if(isValid){
 		unsigned short address = 0x600;
@@ -570,6 +624,8 @@ void assembler(const char *filename) {
 		freedef(define_list);
 	if(dcb_list != NULL);
 		freedcb(dcb_list);
+	if(label_list != NULL)
+		freelab(label_list);
 }
 
 bool generator(){
