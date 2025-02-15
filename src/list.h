@@ -1,5 +1,6 @@
 // 1st list node
 struct node_def {
+	int line;
 	char name[256];
 	char value[256];
 	struct node_def * next;
@@ -51,10 +52,11 @@ LabelList* begin_lab(){
 }
 
 // Insert a new node
-DefineList* insertdef(DefineList* list, char name[], char value[]){
+DefineList* insertdef(DefineList* list, int line, char name[], char value[]){
 	DefineList *new_node = (DefineList*) malloc(sizeof(DefineList));
 	strcpy(new_node->name, name);
 	strcpy(new_node->value, value);
+	new_node->line = line;
 	new_node->next = list;
 	return new_node;
 }
@@ -90,10 +92,10 @@ DefineList* search(DefineList *list, char* name){
 }
 
 // get the value
-char* getdef(DefineList *list, char* name){
+DefineList* getdef(DefineList *list, char* name){
 	for(DefineList *li = list; li != NULL; li = li->next)
 		if(strcmp(li->name, name) == 0)
-			return li->value;
+			return li;
 			
 	return NULL;
 }

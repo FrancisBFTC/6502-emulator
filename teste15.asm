@@ -1,3 +1,5 @@
+define label5 $000
+define label6 $000
 nop
 label1:
 	nop

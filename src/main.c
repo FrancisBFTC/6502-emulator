@@ -343,6 +343,21 @@ void proc_define(){
 		directive_error = true;
 		return;
 	}
+	
+	DefineList* def = getdef(define_list, name);
+	if(def != NULL){
+		printf("Error: This name '%s' at line %d is already defined at line %d.\n", def->name, linenum, def->line);
+		directive_error = true;
+		return;
+	}else{
+		LabelList* lab = getLabelByName(label_list, name);
+		if(lab != NULL){
+			printf("Error: This label '%s' at line %d is already defined at line %d.\n", lab->name, linenum, lab->line);
+			directive_error = true;
+			return;
+		}
+	}
+		
 	if(value[0] == '#'){
 		printerr("Invalid defined value - remove '#'");
 		directive_error = true;
@@ -356,14 +371,13 @@ void proc_define(){
 		}
 	}else{
 		if(!recursive_def(value)) {
-			//++linenum;
 			printerr("Undefined value or decimal error");
 			directive_error = true;
 			return;
 		}
 	}
 	 
-	define_list = insertdef(define_list, name, value);
+	define_list = insertdef(define_list, linenum, name, value);
 }
 
 bool dcb_process(){
@@ -380,10 +394,10 @@ bool recursive_def(char* value){
 	int base = (value[0] != '$') ? 10 : 16;
 	strtol(&value[base >> 4], &endptr, base);
 	if (*endptr != '\0') {
-		char* definition = getdef(define_list, value);
+		DefineList* definition = getdef(define_list, value);
 		if(definition == NULL)
 			return false;
-		strcpy(value, definition);
+		strcpy(value, definition->value);
 		return recursive_def(value);
 	}
 	return true;	
@@ -426,27 +440,21 @@ int check_definition(){
 	if(*endptr != '\0'){
 		strtol(&name[0], &endptr, 16);
 		if(*endptr != '\0'){
-			char* value = getdef(define_list, name);
-			if(value == NULL){
+			DefineList* definition = getdef(define_list, name);
+			if(definition == NULL){
 				printerr("Undefined value");
 				return -1;
 			}
-			// Fazer substituição aqui...
-			//printf("Name Token: '%s', Value Token: %s\n", name, value);
-			token = replace(token, name, value);
-			//printf("Token modificado: '%s'\n", token);
+			token = replace(token, name, definition->value);
 			return 1;
 		}else{
 			if((!index && token[index] != '$') || (token[index-1] == '#' && index)){
-				char* value = getdef(define_list, name);
-				if(value == NULL){
+				DefineList* definition = getdef(define_list, name);
+				if(definition == NULL){
 					printerr("Undefined value - possible hexa error (missing prefix)");
 					return -1;
 				}
-				// Fazer substituição aqui...
-				//printf("Name Token: '%s', Value Token: %s\n", name, value);
-				token = replace(token, name, value);
-				//printf("Token modificado: '%s'\n", token);
+				token = replace(token, name, definition->value);
 				return 1;
 			}
 		}
@@ -493,7 +501,10 @@ bool preprocessor(const char *filename){
     	int length = strcspn(&line[i], ":");
 		token = strtok(line, " ");
 		
-		if(token == NULL || token[0] == ';') continue;
+		if(token == NULL || token[0] == ';') {
+			linenum++;
+			continue;
+		}
 		
 		while (token != NULL) {
 	    	isLineComment = token[0] == ';' || isLineComment;
@@ -516,9 +527,40 @@ bool preprocessor(const char *filename){
 								printerr("Invalid label name - incorrect char");
 								return false;
 							}
+							
 							label[pos] = '\0';
-							label_list = insertlab(label_list, linenum, label, 0x0000);
-							label_list->refs = NULL;
+							strtol(label, &endptr, 10);
+							
+							if(*endptr == NULL || (label[0] >= 0x30 && label[0] <= 0x39)){
+								printerr("Invalid label name - Incorrect format");
+								return false;
+							}
+							for(int i = 0; i < strlen(label); i++){
+								bool isCharLower = label[i] > 0x60 && label[i] < 0x7B;
+								bool isCharUpper = label[i] > 0x40 && label[i] < 0x5B;
+								bool isNum = label[i] >= 0x30 && label[i] <= 0x39;
+								bool isAllowerChars = label[i] == '_' || label[i] == '.';
+								if(!isCharLower && !isCharUpper && !isNum && !isAllowerChars){
+									printerr("Invalid label name - Incorrect char");
+									return false;
+								}
+							}
+							DefineList* def = getdef(define_list, label);
+							if(def == NULL){
+								LabelList* lab = getLabelByName(label_list, label);
+								if(lab == NULL){
+									label_list = insertlab(label_list, linenum, label, 0x0000);
+									label_list->refs = NULL;
+								}else{
+									printf("Error: This label '%s' at line %d is already defined at line %d.\n", lab->name, linenum, lab->line);
+									return false;
+								}
+							}else{
+								printf("Error: This name '%s' at line %d is already defined at line %d.\n", def->name, linenum, def->line);
+								return false;
+							}
+							
+							
 						}else{
 							token = strtok(NULL, " ");
 							if(token != NULL){
