@@ -483,6 +483,68 @@ int get_mnemonic(){
 	return -1;
 }
 
+bool get_label(int length){
+	while(token != NULL){
+		int pos = strcspn(&label[0], ":");
+		if(label[pos] == ':'){
+			token = strtok(NULL, " ");
+			if(token != NULL || label[pos+1] != NULL){
+				printerr("Invalid label name - incorrect char");
+				return false;
+			}
+							
+			label[pos] = '\0';
+			strtol(label, &endptr, 10);
+							
+			if(*endptr == NULL || (label[0] >= 0x30 && label[0] <= 0x39)){
+				printerr("Invalid label name - Incorrect format");
+				return false;
+			}
+			for(int i = 0; i < strlen(label); i++){
+				bool isCharLower = label[i] > 0x60 && label[i] < 0x7B;
+				bool isCharUpper = label[i] > 0x40 && label[i] < 0x5B;
+				bool isNum = label[i] >= 0x30 && label[i] <= 0x39;
+				bool isAllowerChars = label[i] == '_' || label[i] == '.';
+				if(!isCharLower && !isCharUpper && !isNum && !isAllowerChars){
+					printerr("Invalid label name - Incorrect char");
+					return false;
+				}
+			}
+			
+			DefineList* def = getdef(define_list, label);
+			if(def == NULL){
+				LabelList* lab = getLabelByName(label_list, label);
+				if(lab == NULL){
+					label_list = insertlab(label_list, linenum, label, 0x0000);
+					label_list->refs = NULL;
+				}else{
+					printf("Error: This label '%s' at line %d is already defined at line %d.\n", lab->name, linenum, lab->line);
+					return false;
+				}
+			}else{
+				printf("Error: This name '%s' at line %d is already defined at line %d.\n", def->name, linenum, def->line);
+				return false;
+			}
+							
+							
+		}else{
+			token = strtok(NULL, " ");
+			if(token != NULL){
+				strcat(label, &token[0]);
+				int x = (strlen(label) == length) ? 1 : 0;
+				if(strcmp(token-x, ":") != 0){
+					printerr("Invalid label name - incorrect char");
+					return false;
+				}
+			}else{
+				printerr("Invalid label name - missing ':'");
+				return false;
+			}
+		}	
+	}
+	return true;
+}
+
 bool preprocessor(const char *filename){
 	FILE *file = fopen(filename, "r");
     if (file == NULL) {
@@ -519,63 +581,8 @@ bool preprocessor(const char *filename){
 			if(get_directive() == -1){
 				if(get_mnemonic() == -1){
 					label = token;
-					while(token != NULL){
-						int pos = strcspn(&label[0], ":");
-						if(label[pos] == ':'){
-							token = strtok(NULL, " ");
-							if(token != NULL || label[pos+1] != NULL){
-								printerr("Invalid label name - incorrect char");
-								return false;
-							}
-							
-							label[pos] = '\0';
-							strtol(label, &endptr, 10);
-							
-							if(*endptr == NULL || (label[0] >= 0x30 && label[0] <= 0x39)){
-								printerr("Invalid label name - Incorrect format");
-								return false;
-							}
-							for(int i = 0; i < strlen(label); i++){
-								bool isCharLower = label[i] > 0x60 && label[i] < 0x7B;
-								bool isCharUpper = label[i] > 0x40 && label[i] < 0x5B;
-								bool isNum = label[i] >= 0x30 && label[i] <= 0x39;
-								bool isAllowerChars = label[i] == '_' || label[i] == '.';
-								if(!isCharLower && !isCharUpper && !isNum && !isAllowerChars){
-									printerr("Invalid label name - Incorrect char");
-									return false;
-								}
-							}
-							DefineList* def = getdef(define_list, label);
-							if(def == NULL){
-								LabelList* lab = getLabelByName(label_list, label);
-								if(lab == NULL){
-									label_list = insertlab(label_list, linenum, label, 0x0000);
-									label_list->refs = NULL;
-								}else{
-									printf("Error: This label '%s' at line %d is already defined at line %d.\n", lab->name, linenum, lab->line);
-									return false;
-								}
-							}else{
-								printf("Error: This name '%s' at line %d is already defined at line %d.\n", def->name, linenum, def->line);
-								return false;
-							}
-							
-							
-						}else{
-							token = strtok(NULL, " ");
-							if(token != NULL){
-								strcat(label, &token[0]);
-								int x = (strlen(label) == length) ? 1 : 0;
-								if(strcmp(token-x, ":") != 0){
-									printerr("Invalid label name - incorrect char");
-									return false;
-								}
-							}else{
-								printerr("Invalid label name - missing ':'");
-								return false;
-							}
-						}	
-					}
+					if(!get_label(length))
+						return false;
 					
 					continue;
 				}	
