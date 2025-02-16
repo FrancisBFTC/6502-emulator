@@ -5,7 +5,7 @@
 #define EMU6502_PRIVATE_H
 
 /* VERSION DEFINITIONS */
-#define VER_STRING	"0.7.0.27"
+#define VER_STRING	"0.8.0.27"
 #define VER_MAJOR	0
 #define VER_MINOR	8
 #define VER_RELEASE	0
