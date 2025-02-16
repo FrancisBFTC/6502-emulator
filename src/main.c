@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include "list.h"
+#include "../emu6502_private.h"
 
 bool tokenizer(void);
 bool parser(void);
@@ -1077,7 +1078,23 @@ bool setstate(bool literal, bool indirect, bool accumulator){
 
 int main(int argc, char *argv[]) {
 	if (argc == 1) {
-        fprintf(stderr, "Usage: %s -m |--mount <arquivo>\n", argv[0]);
+		const char* description = FILE_DESCRIPTION;
+		const char* author = COMPANY_NAME;
+		const char* version = VER_STRING;
+		printf("\n********************************************************************************\n");
+		printf("%s v%s\n", description, version);
+		printf("Created by %s\n\n", author);
+		printf("********************************************************************************\n");
+        printf("Usage:\n");
+        printf (" -m | --mount <source_file> : Assemble the source file\n" \
+			 	" -e | --emulate <binary_file> : Emulate the binary file\n" \
+				" -me | --mount-emulate <source_file> : Assemble and emulate the file\n\n");
+		printf("Extra parameters:\n");
+		printf (" -o | --output <output_file> : Generate the output file (use -m before)\n" \
+				" -w | --write : Write the assembled file with emulating (use -me before)\n" \
+				" -d | --debug : Debugging the code during emulating (use -m or -me before)\n" \
+				" -h | --hexdump : Show the hexa code after assembly (use -m or -me before)\n" \
+				" -h | --hexdump <binary_file> : Show the hexa code from binary file\n");
         return EXIT_FAILURE;
     }
 

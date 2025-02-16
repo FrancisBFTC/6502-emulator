@@ -29,24 +29,24 @@ IncludeVersionInfo=1
 SupportXPThemes=0
 CompilerSet=0
 CompilerSettings=00000000c0000000000000000
-UnitCount=2
+UnitCount=3
 
 [VersionInfo]
 Major=0
 Minor=8
 Release=0
-Build=27
+Build=40
 LanguageID=1033
 CharsetID=1252
-CompanyName=KiddieOS.Community
-FileVersion=0.8.0.27
+CompanyName=Wenderson Anjos (KiddieOS.Community)
+FileVersion=0.8.0.40
 FileDescription=6502 Assembler and Emulator for console
 InternalName=
 LegalCopyright=
 LegalTrademarks=
 OriginalFilename=
 ProductName=emu6502
-ProductVersion=0.8.0.27
+ProductVersion=0.8.0.40
 AutoIncBuildNr=1
 SyncProduct=1
 
@@ -62,6 +62,16 @@ BuildCmd=
 
 [Unit1]
 FileName=src\list.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit3]
+FileName=emu6502_private.h
 CompileCpp=0
 Folder=
 Compile=1
