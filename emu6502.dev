@@ -33,20 +33,20 @@ UnitCount=2
 
 [VersionInfo]
 Major=0
-Minor=7
+Minor=8
 Release=0
 Build=27
 LanguageID=1033
 CharsetID=1252
 CompanyName=KiddieOS.Community
-FileVersion=0.7.0.27
+FileVersion=0.8.0.27
 FileDescription=6502 Assembler and Emulator for console
 InternalName=
 LegalCopyright=
 LegalTrademarks=
 OriginalFilename=
 ProductName=emu6502
-ProductVersion=0.7.0.27
+ProductVersion=0.8.0.27
 AutoIncBuildNr=1
 SyncProduct=1
 
