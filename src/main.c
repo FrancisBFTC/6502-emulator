@@ -76,7 +76,8 @@ bool isZeroPageY = false;
 bool isAbsoluteX = false;
 bool isAbsoluteY = false;
 bool isAccumulator = false;
-bool isLabel = true;
+bool isLabel = false;
+bool isRelative = false;
 
 bool isDecimal = false;
 
@@ -262,6 +263,7 @@ void reset_states(){
 	indirectX = false;
 	indirectY = false;
 	isLabel = false;
+	isRelative = false;
 	isLineComment = false;
 }
 
@@ -434,11 +436,17 @@ int replace_name(char* name){
 	if(definition == NULL){
 		LabelList* label = getLabelByName(label_list, name);
 		if(label != NULL){
-			if(label->addr == 0x0000)
-				label->refs = insertaddr(label->refs, code_index);
+			bool isBranch = mnemonic_index > 3 && mnemonic_index < 12;
+			if(isBranch)
+				isRelative = true;
+			else
+				isLabel = true;
+				
+			if(label->addr == 0x0000){
+				label->refs = insertaddr(label->refs, code_index, isBranch);
+			}
 			sprintf(str, "%d", label->addr);
-						
-			isLabel = true;
+				
 			value = str;	
 		}else{
 			printerr("Undefined value");
@@ -560,7 +568,7 @@ bool calc_label(){
 	if(list != NULL){
 		list->addr = 0x600 + code_index;
 		if(list->refs != NULL){
-			setref(list->refs, code_address, list->addr);
+			setref(list->refs, code_address, list->addr);	
 			freeref(list->refs);
 			list->refs = NULL;
 		}
@@ -764,12 +772,15 @@ bool generator(){
 						error("cannot use ZeroPageX addressing");
 		    			return false;
 		    	}else if(!(addressing[mnemonic_index] & ZP)){
-		    		error("cannot use ZeroPage addressing");
-		    		return false;
+		    		if(!isRelative){
+		    			error("cannot use ZeroPage addressing");
+		    			return false;
+					}
 				}else{
 		    		opcode += 16;
 				}
 			}else{
+				isAbsolute = isAbsolute && !isRelative;
 				if(isAbsolute){
 					opcode += 8;  	// e.g. ADC = $65 + 8 = $6D
 					if(isAbsoluteX){
@@ -793,8 +804,11 @@ bool generator(){
 						}
 						if(isJump)	opcode -= 8;
 					}
-					
-		    		operand_byte2 = (char) ((number & 0xFF00) >> 8);
+						
+			    	operand_byte2 = (char) ((number & 0xFF00) >> 8);
+				}else{
+					if(isRelative)
+						operand_byte1 = (char) number - (0x600 + code_index + 2);	
 				}
 			}
 		}
@@ -844,7 +858,7 @@ bool parser(){
         		
 			if(((len <= 2 && !isDecimal) || (number < 256 && isDecimal)) && !isLabel){
 				isZeroPage = true;
-			}else if(((len < 5 && !isDecimal) || (number < 65536 && isDecimal)) || isLabel){
+			}else if(((len < 5 && !isDecimal) || (number < 65536 && isDecimal)) || (isLabel && !isRelative)){
 				isAbsolute = true;
 			}else{
 				printerr("Exceeded the 16-bit limit for address");

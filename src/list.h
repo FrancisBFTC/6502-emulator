@@ -19,6 +19,7 @@ typedef struct node_dcb DcbList;
 // 3th list node
 struct node_refs {
 	int addr;
+	bool relative;
 	struct node_refs * next;
 };
 typedef struct node_refs RefsAddr;
@@ -83,9 +84,10 @@ LabelList* insertlab(LabelList* list, int line, char name[], int addr){
 }
 
 // Insert a new node
-RefsAddr* insertaddr(RefsAddr* list, int addr){
+RefsAddr* insertaddr(RefsAddr* list, int addr, bool relative){
 	RefsAddr *new_node = (RefsAddr*) malloc(sizeof(RefsAddr));
 	new_node->addr = addr;
+	new_node->relative = relative;
 	new_node->next = list;
 	return new_node;
 }
@@ -138,9 +140,14 @@ LabelList* getLabelByName(LabelList *list, char name[]){
 // get the value
 void setref(RefsAddr *list, char *code_addr, int addr){
 	for(RefsAddr *li = list; li != NULL; li = li->next){
-		int index = li->addr;
-		code_addr[index+1] = (addr & 0xFF);
-		code_addr[index+2] = (addr & 0xFF00) >> 8;
+		int op_index = li->addr + 1;
+		if(li->relative){
+			int PC = 0x600 + op_index - 1;
+			code_addr[op_index] = ((addr & 0xFF) - (PC + 2));
+		}else{
+			code_addr[op_index] = (addr & 0xFF);
+			code_addr[op_index+1] = (addr & 0xFF00) >> 8;
+		}
 	}
 }
 
