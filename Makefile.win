@@ -4,8 +4,9 @@
 CPP      = g++.exe -std=c99
 CC       = gcc.exe -std=c99
 WINDRES  = windres.exe
-OBJ      = src/main.o
-LINKOBJ  = src/main.o
+RES      = emu6502_private.res
+OBJ      = src/main.o $(RES)
+LINKOBJ  = src/main.o $(RES)
 LIBS     = -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib" -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib" -static-libgcc
 INCS     = -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include"
 CXXINCS  = -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include/c++"
@@ -26,3 +27,7 @@ $(BIN): $(OBJ)
 
 src/main.o: src/main.c
 	$(CC) -c src/main.c -o src/main.o $(CFLAGS)
+
+emu6502_private.res: emu6502_private.rc 
+	$(WINDRES) -i emu6502_private.rc --input-format=rc -o emu6502_private.res -O coff 
+

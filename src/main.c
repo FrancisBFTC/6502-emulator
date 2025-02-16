@@ -620,9 +620,6 @@ bool preprocessor(const char *filename){
 		}
 		linenum++;
 	}
-	
-	if(label_list != NULL)
-		showlab(label_list);
 		
 	return true;
 }
@@ -680,9 +677,6 @@ void assembler(const char *filename) {
 		perror("Error: The maximum program size is 2560 bytes.");
         exit(EXIT_FAILURE);
 	}
-	
-	if(label_list != NULL)
-		showlab(label_list);
 			
 	if(isValid){
 		unsigned short address = 0x600;
@@ -762,7 +756,7 @@ bool generator(){
 				}
 			}
 			
-		    if(isZeroPage && ((isZeroPageX || isZeroPageY) || isBranch)){	//  && mnemonic_index == 29
+		    if(isZeroPage && ((isZeroPageX || isZeroPageY) || isBranch)){
 		    	if(isZeroPageY && !(addressing[mnemonic_index] & ZPY)){
 		    			error("cannot use ZeroPageY addressing");
 		    			return false;
@@ -859,7 +853,6 @@ bool parser(){
 		}
 	}else{
 		isAccumulator = mnemonic_index == 2 || mnemonic_index == 31 || mnemonic_index == 34 || mnemonic_index == 35;
-		// Instrução de 0 operando
 		if(addressing[mnemonic_index] && !isAccumulator){
 			printerr("Instruction expect 1 operand. Given 0");
 			return false;
@@ -877,14 +870,6 @@ bool parse_addressing(int index){
 		int i = (operand[0] == '(') ? index + 1 : index;
 		
 		if(isDecimal) --i;
-		
-			
-		/*
-		if(isIndirect && operand[index] != '$'){
-			printerr("Incorrect indirect number - insert '$'");
-			return false;
-		}
-		*/
 		
 		for(; i < operand_len; i++){
 			if(operand[i] != ',' && operand[i] != ')'){
@@ -958,7 +943,7 @@ bool parse_addressing(int index){
 					return false;
 				}
 				bool noJump = (mnemonic_index != 26 && mnemonic_index != 27);
-				if(!indirectY && !indirectX && isIndirect && noJump){	// && verificar se é diferente de jumps
+				if(!indirectY && !indirectX && isIndirect && noJump){
 					printerr("Invalid indirect addressing");
 					return false;
 				}
