@@ -82,6 +82,14 @@ LabelList* insertlab(LabelList* list, int line, char name[], int addr){
 	return new_node;
 }
 
+// Insert a new node
+RefsAddr* insertaddr(RefsAddr* list, int addr){
+	RefsAddr *new_node = (RefsAddr*) malloc(sizeof(RefsAddr));
+	new_node->addr = addr;
+	new_node->next = list;
+	return new_node;
+}
+
 // search the node
 DefineList* search(DefineList *list, char* name){
 	for(DefineList *li = list; li != NULL; li = li->next)
@@ -127,6 +135,15 @@ LabelList* getLabelByName(LabelList *list, char name[]){
 	return NULL;
 }
 
+// get the value
+void setref(RefsAddr *list, char *code_addr, int addr){
+	for(RefsAddr *li = list; li != NULL; li = li->next){
+		int index = li->addr;
+		code_addr[index+1] = (addr & 0xFF);
+		code_addr[index+2] = (addr & 0xFF00) >> 8;
+	}
+}
+
 // show each node the list
 void showdef(DefineList *list){
 	for(DefineList *li = list; li != NULL; li = li->next)
@@ -148,6 +165,12 @@ void showdcb(DcbList *list){
 void showlab(LabelList *list){
 	for(LabelList *li = list; li != NULL; li = li->next)
 		printf("name = %s, addr = 0x%X, line = %d\n", li->name, li->addr, li->line);
+}
+
+// show each node the list
+void showrefs(RefsAddr *list){
+	for(RefsAddr *li = list; li != NULL; li = li->next)
+		printf("addr = 0x%X, \n", li->addr);
 }
 
 // free the define list
@@ -179,6 +202,17 @@ void freelab(LabelList *list){
 	
 	while(aux != NULL){
 		LabelList *next_node = aux->next;
+		free(aux);
+		aux = next_node;
+	}
+}
+
+// free the define list
+void freeref(RefsAddr *list){
+	RefsAddr *aux = list;
+	
+	while(aux != NULL){
+		RefsAddr *next_node = aux->next;
 		free(aux);
 		aux = next_node;
 	}

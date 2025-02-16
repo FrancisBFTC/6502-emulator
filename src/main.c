@@ -76,6 +76,7 @@ bool isZeroPageY = false;
 bool isAbsoluteX = false;
 bool isAbsoluteY = false;
 bool isAccumulator = false;
+bool isLabel = true;
 
 bool isDecimal = false;
 
@@ -260,6 +261,7 @@ void reset_states(){
 	isIndirect = false;
 	indirectX = false;
 	indirectY = false;
+	isLabel = false;
 	isLineComment = false;
 }
 
@@ -439,22 +441,47 @@ int check_definition(){
 	strtol(&name[0], &endptr, 10);
 	if(*endptr != '\0'){
 		strtol(&name[0], &endptr, 16);
+		char* value;
+		char str[6];
 		if(*endptr != '\0'){
 			DefineList* definition = getdef(define_list, name);
 			if(definition == NULL){
-				printerr("Undefined value");
-				return -1;
+				LabelList* label = getLabelByName(label_list, name);
+				if(label != NULL){
+					if(label->addr == 0x0000)
+						label->refs = insertaddr(label->refs, code_index);
+					sprintf(str, "%d", label->addr);
+					isLabel = true;
+					value = str;	
+				}else{
+					printerr("Undefined value");
+					return -1;
+				}
+			}else{
+				value = definition->value;
 			}
-			token = replace(token, name, definition->value);
+			token = replace(token, name, value);
 			return 1;
 		}else{
 			if((!index && token[index] != '$') || (token[index-1] == '#' && index)){
 				DefineList* definition = getdef(define_list, name);
 				if(definition == NULL){
-					printerr("Undefined value - possible hexa error (missing prefix)");
-					return -1;
+					LabelList* label = getLabelByName(label_list, name);
+					if(label != NULL){
+						if(label->addr == 0x0000)
+							label->refs = insertaddr(label->refs, code_index);
+						sprintf(str, "%d", label->addr);
+						
+						isLabel = true;
+						value = str;	
+					}else{
+						printerr("Undefined value - possible hexa error (missing prefix)");
+						return -1;	
+					}
+				}else{
+					value = definition->value;
 				}
-				token = replace(token, name, definition->value);
+				token = replace(token, name, value);
 				return 1;
 			}
 		}
@@ -533,7 +560,7 @@ bool get_label(int length){
 				strcat(label, &token[0]);
 				int x = (strlen(label) == length) ? 1 : 0;
 				if(strcmp(token-x, ":") != 0){
-					printerr("Invalid label name - incorrect char");
+					printerr("Invalid label name or inexistent instruction");
 					return false;
 				}
 			}else{
@@ -583,9 +610,8 @@ bool preprocessor(const char *filename){
 					label = token;
 					if(!get_label(length))
 						return false;
-					
-					continue;
-				}	
+				}
+				break;	
 			}else if(directive_error)
 					return false;
 					
@@ -653,7 +679,10 @@ void assembler(const char *filename) {
 		perror("Error: The maximum program size is 2560 bytes.");
         exit(EXIT_FAILURE);
 	}
-		
+	
+	if(label_list != NULL)
+		showlab(label_list);
+			
 	if(isValid){
 		unsigned short address = 0x600;
 		printf("Code Length: %d\n", code_index);
@@ -818,9 +847,9 @@ bool parser(){
 			if(!parsing_operand(1))
         		return false;
         		
-			if((len <= 2 && !isDecimal) || (number < 256 && isDecimal)){
+			if(((len <= 2 && !isDecimal) || (number < 256 && isDecimal)) && !isLabel){
 				isZeroPage = true;
-			}else if((len < 5 && !isDecimal) || (number < 65536 && isDecimal)){
+			}else if(((len < 5 && !isDecimal) || (number < 65536 && isDecimal)) || isLabel){
 				isAbsolute = true;
 			}else{
 				printerr("Exceeded the 16-bit limit for address");
@@ -884,8 +913,8 @@ bool parse_addressing(int index){
 						int op_int = atoi(op);
 						bool isRegisterX = (operand[i] == 'X' || operand[i] == 'x');
 						bool isRegisterY = (operand[i] == 'Y' || operand[i] == 'y');
-						bool is8bit = (count <= 2 && !isDecimal) || (op_int < 256 && isDecimal);
-						bool is16bit = ((count > 2 && count < 5) && !isDecimal) || ((op_int > 255 && op_int < 65536) && isDecimal);
+						bool is8bit = ((count <= 2 && !isDecimal) || (op_int < 256 && isDecimal)) && !isLabel;
+						bool is16bit = ((count > 2 && count < 5) && !isDecimal) || ((op_int > 255 && op_int < 65536) && isDecimal) || isLabel;
 						indirectX = isRegisterX && is8bit && !isParenthesisValid && isIndirect;
 						indirectY = isRegisterY && is8bit && isParenthesisValid && isIndirect;
 						isZeroPageX = isRegisterX && is8bit && !isIndirect;
@@ -1013,17 +1042,34 @@ bool tokenizer(){
 			}
 			isMnemonic = true;
 			mnemonic = token;
-			for(; i < MNEMONICS_SIZE; i++)
-				if(strcmp(mnemonics[i], mnemonic) == 0)
-					break;
 			
-			toIgnore = strcmp(mnemonic, "DEFINE") == 0;
+			toIgnore = strcmp(token, "DEFINE") == 0;
 			if(toIgnore)
 				return true;
 				
-			if(i == MNEMONICS_SIZE){
-				printerr("Unknown mnemonic");
-				return false;
+			mnemonic_index = get_mnemonic();
+			if(mnemonic_index == -1){
+				int pos = strcspn(&token[0], ":");
+				char* label = token;
+				label[pos] = '\0';
+				
+				LabelList* list = getLabelByLine(label_list, linenum);
+				if(list != NULL){
+					if(strcmp(list->name, label) == 0){
+						list->addr = 0x600 + code_index;
+						if(list->refs != NULL){
+							setref(list->refs, code_address, list->addr);
+							freeref(list->refs);
+							list->refs = NULL;
+						}
+						
+						toIgnore = true;
+						return toIgnore;	
+					}
+				}else{
+					printerr("Unknown mnemonic");
+					return false;
+				}	
 			}
 			
 			if(i == 56)
@@ -1034,7 +1080,7 @@ bool tokenizer(){
         count_tok++;
     }
     
-    mnemonic_index = i;
+    //mnemonic_index = i;
 	return true;	
 }
 
