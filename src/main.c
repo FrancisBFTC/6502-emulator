@@ -427,6 +427,30 @@ char* replace(char* token, const char* old_substr, const char* new_substr){
 	return NULL;
 }
 
+int replace_name(char* name){
+	char* value;
+	char str[6];
+	DefineList* definition = getdef(define_list, name);
+	if(definition == NULL){
+		LabelList* label = getLabelByName(label_list, name);
+		if(label != NULL){
+			if(label->addr == 0x0000)
+				label->refs = insertaddr(label->refs, code_index);
+			sprintf(str, "%d", label->addr);
+						
+			isLabel = true;
+			value = str;	
+		}else{
+			printerr("Undefined value");
+			return -1;	
+		}
+	}else{
+		value = definition->value;
+	}
+	token = replace(token, name, value);
+	return 1;	
+}
+
 int check_definition(){
 	int index = 0;
 	while(token[index] == '#' || token[index] == '$' || token[index] == '(') index++;
@@ -441,50 +465,9 @@ int check_definition(){
 	strtol(&name[0], &endptr, 10);
 	if(*endptr != '\0'){
 		strtol(&name[0], &endptr, 16);
-		char* value;
-		char str[6];
-		if(*endptr != '\0'){
-			DefineList* definition = getdef(define_list, name);
-			if(definition == NULL){
-				LabelList* label = getLabelByName(label_list, name);
-				if(label != NULL){
-					if(label->addr == 0x0000)
-						label->refs = insertaddr(label->refs, code_index);
-					sprintf(str, "%d", label->addr);
-					isLabel = true;
-					value = str;	
-				}else{
-					printerr("Undefined value");
-					return -1;
-				}
-			}else{
-				value = definition->value;
-			}
-			token = replace(token, name, value);
-			return 1;
-		}else{
-			if((!index && token[index] != '$') || (token[index-1] == '#' && index)){
-				DefineList* definition = getdef(define_list, name);
-				if(definition == NULL){
-					LabelList* label = getLabelByName(label_list, name);
-					if(label != NULL){
-						if(label->addr == 0x0000)
-							label->refs = insertaddr(label->refs, code_index);
-						sprintf(str, "%d", label->addr);
-						
-						isLabel = true;
-						value = str;	
-					}else{
-						printerr("Undefined value - possible hexa error (missing prefix)");
-						return -1;	
-					}
-				}else{
-					value = definition->value;
-				}
-				token = replace(token, name, value);
-				return 1;
-			}
-		}
+		bool possibleHexaError = (!index && token[index] != '$') || (token[index-1] == '#' && index);
+		if(*endptr != '\0' || possibleHexaError)
+			return replace_name(name);
 	}
 
 	return 0;
@@ -570,6 +553,24 @@ bool get_label(int length){
 		}	
 	}
 	return true;
+}
+
+bool calc_label(){
+	LabelList* list = getLabelByLine(label_list, linenum);
+	if(list != NULL){
+		list->addr = 0x600 + code_index;
+		if(list->refs != NULL){
+			setref(list->refs, code_address, list->addr);
+			freeref(list->refs);
+			list->refs = NULL;
+		}
+						
+		toIgnore = true;
+		return toIgnore;	
+	}else{
+		printerr("Unknown mnemonic");
+		return false;
+	}
 }
 
 bool preprocessor(const char *filename){
@@ -1048,29 +1049,8 @@ bool tokenizer(){
 				return true;
 				
 			mnemonic_index = get_mnemonic();
-			if(mnemonic_index == -1){
-				int pos = strcspn(&token[0], ":");
-				char* label = token;
-				label[pos] = '\0';
-				
-				LabelList* list = getLabelByLine(label_list, linenum);
-				if(list != NULL){
-					if(strcmp(list->name, label) == 0){
-						list->addr = 0x600 + code_index;
-						if(list->refs != NULL){
-							setref(list->refs, code_address, list->addr);
-							freeref(list->refs);
-							list->refs = NULL;
-						}
-						
-						toIgnore = true;
-						return toIgnore;	
-					}
-				}else{
-					printerr("Unknown mnemonic");
-					return false;
-				}	
-			}
+			if(mnemonic_index == -1)
+				return calc_label();	
 			
 			if(i == 56)
 				break;
@@ -1080,7 +1060,6 @@ bool tokenizer(){
         count_tok++;
     }
     
-    //mnemonic_index = i;
 	return true;	
 }
 
