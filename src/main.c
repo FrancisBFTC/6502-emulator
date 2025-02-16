@@ -765,7 +765,7 @@ bool generator(){
 				}
 			}
 			
-		    if(isZeroPage && ((isZeroPageX || isZeroPageY) || isBranch)){
+		    if(isZeroPage && ((isZeroPageX || isZeroPageY))){	// || isBranch
 		    	if(isZeroPageY && !(addressing[mnemonic_index] & ZPY)){
 		    			error("cannot use ZeroPageY addressing");
 		    			return false;
@@ -808,8 +808,17 @@ bool generator(){
 						
 			    	operand_byte2 = (char) ((number & 0xFF00) >> 8);
 				}else{
-					if(isRelative)
-						operand_byte1 = (char) number - (0x600 + code_index + 2);	
+					if(isAbsoluteX && !(addressing[mnemonic_index] & ABX)){
+		    			error("cannot use AbsoluteX addressing");
+		    			return false;
+					}else if(isAbsoluteY && !(addressing[mnemonic_index] & ABY)){
+							error("cannot use AbsoluteY addressing");
+			    			return false;
+			    	}else if(isRelative){
+			    			if(number)
+			    				operand_byte1 = (char) number - (0x600 + code_index + 2);
+						  }
+								
 				}
 			}
 		}
@@ -857,7 +866,7 @@ bool parser(){
 			if(!parsing_operand(1))
         		return false;
         		
-			if(((len <= 2 && !isDecimal) || (number < 256 && isDecimal)) && !isLabel){
+			if(((len <= 2 && !isDecimal) || (number < 256 && isDecimal)) && !isLabel && !isRelative){
 				isZeroPage = true;
 			}else if(((len < 5 && !isDecimal) || (number < 65536 && isDecimal)) || (isLabel && !isRelative)){
 				isAbsolute = true;
@@ -914,14 +923,16 @@ bool parse_addressing(int index){
 						int op_int = atoi(op);
 						bool isRegisterX = (operand[i] == 'X' || operand[i] == 'x');
 						bool isRegisterY = (operand[i] == 'Y' || operand[i] == 'y');
-						bool is8bit = ((count <= 2 && !isDecimal) || (op_int < 256 && isDecimal)) && !isLabel;
-						bool is16bit = ((count > 2 && count < 5) && !isDecimal) || ((op_int > 255 && op_int < 65536) && isDecimal) || isLabel;
+						bool is8bit = ((count <= 2 && !isDecimal) || (op_int < 256 && isDecimal)) && !isLabel && !isRelative;
+						bool is16bit = ((count > 2 && count < 5) && !isDecimal) || ((op_int > 255 && op_int < 65536) && isDecimal) || (isLabel || isRelative);
 						indirectX = isRegisterX && is8bit && !isParenthesisValid && isIndirect;
 						indirectY = isRegisterY && is8bit && isParenthesisValid && isIndirect;
 						isZeroPageX = isRegisterX && is8bit && !isIndirect;
 						isZeroPageY = isRegisterY && is8bit && !isIndirect;
 						isAbsoluteX = isRegisterX && is16bit && !isIndirect;
 						isAbsoluteY = isRegisterY && is16bit && !isIndirect;
+						
+						printf("isAbsoluteX: %d, count: %d, isDecimal: %d, op_int: %d\n", isAbsoluteX, count, isDecimal, op_int);
 						
 						if(!indirectY && !indirectX && isIndirect){
 							printerr("Invalid indirect addressing");
