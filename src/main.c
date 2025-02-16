@@ -58,6 +58,7 @@ char *token;
 char *directive;
 char *mnemonic;
 char *operand;
+char *label;
 
 int mnemonic_index = 0;
 int isDefinition = 0;
@@ -75,6 +76,7 @@ bool isZeroPageY = false;
 bool isAbsoluteX = false;
 bool isAbsoluteY = false;
 bool isAccumulator = false;
+bool isLabel = true;
 
 bool isDecimal = false;
 
@@ -88,6 +90,7 @@ unsigned char *code_address;
 
 DefineList *define_list;
 DcbList *dcb_list;
+LabelList *label_list;
 
 #define MNEMONICS_SIZE 	57
 const char* mnemonics[] = {
@@ -258,6 +261,7 @@ void reset_states(){
 	isIndirect = false;
 	indirectX = false;
 	indirectY = false;
+	isLabel = false;
 	isLineComment = false;
 }
 
@@ -341,6 +345,21 @@ void proc_define(){
 		directive_error = true;
 		return;
 	}
+	
+	DefineList* def = getdef(define_list, name);
+	if(def != NULL){
+		printf("Error: This name '%s' at line %d is already defined at line %d.\n", def->name, linenum, def->line);
+		directive_error = true;
+		return;
+	}else{
+		LabelList* lab = getLabelByName(label_list, name);
+		if(lab != NULL){
+			printf("Error: This label '%s' at line %d is already defined at line %d.\n", lab->name, linenum, lab->line);
+			directive_error = true;
+			return;
+		}
+	}
+		
 	if(value[0] == '#'){
 		printerr("Invalid defined value - remove '#'");
 		directive_error = true;
@@ -354,14 +373,13 @@ void proc_define(){
 		}
 	}else{
 		if(!recursive_def(value)) {
-			//++linenum;
 			printerr("Undefined value or decimal error");
 			directive_error = true;
 			return;
 		}
 	}
 	 
-	define_list = insertdef(define_list, name, value);
+	define_list = insertdef(define_list, linenum, name, value);
 }
 
 bool dcb_process(){
@@ -378,10 +396,10 @@ bool recursive_def(char* value){
 	int base = (value[0] != '$') ? 10 : 16;
 	strtol(&value[base >> 4], &endptr, base);
 	if (*endptr != '\0') {
-		char* definition = getdef(define_list, value);
+		DefineList* definition = getdef(define_list, value);
 		if(definition == NULL)
 			return false;
-		strcpy(value, definition);
+		strcpy(value, definition->value);
 		return recursive_def(value);
 	}
 	return true;	
@@ -409,6 +427,30 @@ char* replace(char* token, const char* old_substr, const char* new_substr){
 	return NULL;
 }
 
+int replace_name(char* name){
+	char* value;
+	char str[6];
+	DefineList* definition = getdef(define_list, name);
+	if(definition == NULL){
+		LabelList* label = getLabelByName(label_list, name);
+		if(label != NULL){
+			if(label->addr == 0x0000)
+				label->refs = insertaddr(label->refs, code_index);
+			sprintf(str, "%d", label->addr);
+						
+			isLabel = true;
+			value = str;	
+		}else{
+			printerr("Undefined value");
+			return -1;	
+		}
+	}else{
+		value = definition->value;
+	}
+	token = replace(token, name, value);
+	return 1;	
+}
+
 int check_definition(){
 	int index = 0;
 	while(token[index] == '#' || token[index] == '$' || token[index] == '(') index++;
@@ -423,34 +465,112 @@ int check_definition(){
 	strtol(&name[0], &endptr, 10);
 	if(*endptr != '\0'){
 		strtol(&name[0], &endptr, 16);
-		if(*endptr != '\0'){
-			char* value = getdef(define_list, name);
-			if(value == NULL){
-				printerr("Undefined value");
-				return -1;
-			}
-			// Fazer substituição aqui...
-			//printf("Name Token: '%s', Value Token: %s\n", name, value);
-			token = replace(token, name, value);
-			//printf("Token modificado: '%s'\n", token);
-			return 1;
-		}else{
-			if((!index && token[index] != '$') || (token[index-1] == '#' && index)){
-				char* value = getdef(define_list, name);
-				if(value == NULL){
-					printerr("Undefined value - possible hexa error (missing prefix)");
-					return -1;
-				}
-				// Fazer substituição aqui...
-				//printf("Name Token: '%s', Value Token: %s\n", name, value);
-				token = replace(token, name, value);
-				//printf("Token modificado: '%s'\n", token);
-				return 1;
-			}
-		}
+		bool possibleHexaError = (!index && token[index] != '$') || (token[index-1] == '#' && index);
+		if(*endptr != '\0' || possibleHexaError)
+			return replace_name(name);
 	}
 
 	return 0;
+}
+
+int get_directive(){
+	for(int i = 0; i < DIRECTIVES_SIZE; i++){
+		if(strcmp(directives[i], token) == 0){
+			func_ptr = (void(*)())process[i];
+			func_ptr();
+			return i;	
+		}	
+	}
+	return -1;	
+}
+
+int get_mnemonic(){
+	for(int i = 0; i < MNEMONICS_SIZE; i++){
+		if(strcmp(mnemonics[i], token) == 0){
+			return i;
+		}	
+	}
+	return -1;
+}
+
+bool get_label(int length){
+	while(token != NULL){
+		int pos = strcspn(&label[0], ":");
+		if(label[pos] == ':'){
+			token = strtok(NULL, " ");
+			if(token != NULL || label[pos+1] != NULL){
+				printerr("Invalid label name - incorrect char");
+				return false;
+			}
+							
+			label[pos] = '\0';
+			strtol(label, &endptr, 10);
+							
+			if(*endptr == NULL || (label[0] >= 0x30 && label[0] <= 0x39)){
+				printerr("Invalid label name - Incorrect format");
+				return false;
+			}
+			for(int i = 0; i < strlen(label); i++){
+				bool isCharLower = label[i] > 0x60 && label[i] < 0x7B;
+				bool isCharUpper = label[i] > 0x40 && label[i] < 0x5B;
+				bool isNum = label[i] >= 0x30 && label[i] <= 0x39;
+				bool isAllowerChars = label[i] == '_' || label[i] == '.';
+				if(!isCharLower && !isCharUpper && !isNum && !isAllowerChars){
+					printerr("Invalid label name - Incorrect char");
+					return false;
+				}
+			}
+			
+			DefineList* def = getdef(define_list, label);
+			if(def == NULL){
+				LabelList* lab = getLabelByName(label_list, label);
+				if(lab == NULL){
+					label_list = insertlab(label_list, linenum, label, 0x0000);
+					label_list->refs = NULL;
+				}else{
+					printf("Error: This label '%s' at line %d is already defined at line %d.\n", lab->name, linenum, lab->line);
+					return false;
+				}
+			}else{
+				printf("Error: This name '%s' at line %d is already defined at line %d.\n", def->name, linenum, def->line);
+				return false;
+			}
+							
+							
+		}else{
+			token = strtok(NULL, " ");
+			if(token != NULL){
+				strcat(label, &token[0]);
+				int x = (strlen(label) == length) ? 1 : 0;
+				if(strcmp(token-x, ":") != 0){
+					printerr("Invalid label name or inexistent instruction");
+					return false;
+				}
+			}else{
+				printerr("Invalid label name - missing ':'");
+				return false;
+			}
+		}	
+	}
+	return true;
+}
+
+bool calc_label(){
+	LabelList* list = getLabelByLine(label_list, linenum);
+	if(list != NULL){
+		list->addr = 0x600 + code_index;
+		if(list->refs != NULL){
+			setref(list->refs, code_address, list->addr);
+			freeref(list->refs);
+			list->refs = NULL;
+		}
+						
+		toIgnore = true;
+		return toIgnore;	
+	}else{
+		printerr("Unknown mnemonic");
+		return false;
+	}
 }
 
 bool preprocessor(const char *filename){
@@ -462,10 +582,19 @@ bool preprocessor(const char *filename){
     
     define_list = begin_def();
     dcb_list = begin_dcb();
+    label_list = begin_lab();
     while (fgets(line, sizeof(line), file)){
     	format_line();
+    	
+    	int i = 0;
+    	for(; line[i] == ' '; i++);
+    	int length = strcspn(&line[i], ":");
 		token = strtok(line, " ");
-		if(token == NULL || token[0] == ';') continue;
+		
+		if(token == NULL || token[0] == ';') {
+			linenum++;
+			continue;
+		}
 		
 		while (token != NULL) {
 	    	isLineComment = token[0] == ';' || isLineComment;
@@ -473,19 +602,20 @@ bool preprocessor(const char *filename){
 	    		token = strtok(NULL, " ");
 	    		continue;
 			}
+			
 			directive_error = false;
-			isDirective = true;
-			directive = token;
-			int i = 0;
-			for(; i < DIRECTIVES_SIZE; i++){
-				if(strcmp(directives[i], directive) == 0){
-					func_ptr = (void(*)())process[i];
-					func_ptr();
-					break;	
-				}	
-			}
-			if(directive_error)
-				return false;
+			isDirective = false;
+			isMnemonic = false;
+			if(get_directive() == -1){
+				if(get_mnemonic() == -1){
+					label = token;
+					if(!get_label(length))
+						return false;
+				}
+				break;	
+			}else if(directive_error)
+					return false;
+					
 			token = strtok(NULL, " ");
 		}
 		linenum++;
@@ -508,7 +638,7 @@ void assembler(const char *filename) {
     // Definir o endereço base de código como 0x600
     code_address = memory + 0x600;
     linenum = 1;
-	    
+	
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Erro ao abrir o arquivo");
@@ -547,10 +677,7 @@ void assembler(const char *filename) {
 		perror("Error: The maximum program size is 2560 bytes.");
         exit(EXIT_FAILURE);
 	}
-	
-	//if(define_list != NULL)
-	//	showdef(define_list);
-		
+			
 	if(isValid){
 		unsigned short address = 0x600;
 		printf("Code Length: %d\n", code_index);
@@ -570,6 +697,8 @@ void assembler(const char *filename) {
 		freedef(define_list);
 	if(dcb_list != NULL);
 		freedcb(dcb_list);
+	if(label_list != NULL)
+		freelab(label_list);
 }
 
 bool generator(){
@@ -627,7 +756,7 @@ bool generator(){
 				}
 			}
 			
-		    if(isZeroPage && ((isZeroPageX || isZeroPageY) || isBranch)){	//  && mnemonic_index == 29
+		    if(isZeroPage && ((isZeroPageX || isZeroPageY) || isBranch)){
 		    	if(isZeroPageY && !(addressing[mnemonic_index] & ZPY)){
 		    			error("cannot use ZeroPageY addressing");
 		    			return false;
@@ -713,9 +842,9 @@ bool parser(){
 			if(!parsing_operand(1))
         		return false;
         		
-			if((len <= 2 && !isDecimal) || (number < 256 && isDecimal)){
+			if(((len <= 2 && !isDecimal) || (number < 256 && isDecimal)) && !isLabel){
 				isZeroPage = true;
-			}else if((len < 5 && !isDecimal) || (number < 65536 && isDecimal)){
+			}else if(((len < 5 && !isDecimal) || (number < 65536 && isDecimal)) || isLabel){
 				isAbsolute = true;
 			}else{
 				printerr("Exceeded the 16-bit limit for address");
@@ -724,7 +853,6 @@ bool parser(){
 		}
 	}else{
 		isAccumulator = mnemonic_index == 2 || mnemonic_index == 31 || mnemonic_index == 34 || mnemonic_index == 35;
-		// Instrução de 0 operando
 		if(addressing[mnemonic_index] && !isAccumulator){
 			printerr("Instruction expect 1 operand. Given 0");
 			return false;
@@ -742,14 +870,6 @@ bool parse_addressing(int index){
 		int i = (operand[0] == '(') ? index + 1 : index;
 		
 		if(isDecimal) --i;
-		
-			
-		/*
-		if(isIndirect && operand[index] != '$'){
-			printerr("Incorrect indirect number - insert '$'");
-			return false;
-		}
-		*/
 		
 		for(; i < operand_len; i++){
 			if(operand[i] != ',' && operand[i] != ')'){
@@ -779,8 +899,8 @@ bool parse_addressing(int index){
 						int op_int = atoi(op);
 						bool isRegisterX = (operand[i] == 'X' || operand[i] == 'x');
 						bool isRegisterY = (operand[i] == 'Y' || operand[i] == 'y');
-						bool is8bit = (count <= 2 && !isDecimal) || (op_int < 256 && isDecimal);
-						bool is16bit = ((count > 2 && count < 5) && !isDecimal) || ((op_int > 255 && op_int < 65536) && isDecimal);
+						bool is8bit = ((count <= 2 && !isDecimal) || (op_int < 256 && isDecimal)) && !isLabel;
+						bool is16bit = ((count > 2 && count < 5) && !isDecimal) || ((op_int > 255 && op_int < 65536) && isDecimal) || isLabel;
 						indirectX = isRegisterX && is8bit && !isParenthesisValid && isIndirect;
 						indirectY = isRegisterY && is8bit && isParenthesisValid && isIndirect;
 						isZeroPageX = isRegisterX && is8bit && !isIndirect;
@@ -823,7 +943,7 @@ bool parse_addressing(int index){
 					return false;
 				}
 				bool noJump = (mnemonic_index != 26 && mnemonic_index != 27);
-				if(!indirectY && !indirectX && isIndirect && noJump){	// && verificar se é diferente de jumps
+				if(!indirectY && !indirectX && isIndirect && noJump){
 					printerr("Invalid indirect addressing");
 					return false;
 				}
@@ -908,18 +1028,14 @@ bool tokenizer(){
 			}
 			isMnemonic = true;
 			mnemonic = token;
-			for(; i < MNEMONICS_SIZE; i++)
-				if(strcmp(mnemonics[i], mnemonic) == 0)
-					break;
 			
-			toIgnore = strcmp(mnemonic, "DEFINE") == 0;
+			toIgnore = strcmp(token, "DEFINE") == 0;
 			if(toIgnore)
 				return true;
 				
-			if(i == MNEMONICS_SIZE){
-				printerr("Unknown mnemonic");
-				return false;
-			}
+			mnemonic_index = get_mnemonic();
+			if(mnemonic_index == -1)
+				return calc_label();	
 			
 			if(i == 56)
 				break;
@@ -929,7 +1045,6 @@ bool tokenizer(){
         count_tok++;
     }
     
-    mnemonic_index = i;
 	return true;	
 }
 
