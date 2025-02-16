@@ -932,8 +932,6 @@ bool parse_addressing(int index){
 						isAbsoluteX = isRegisterX && is16bit && !isIndirect;
 						isAbsoluteY = isRegisterY && is16bit && !isIndirect;
 						
-						printf("isAbsoluteX: %d, count: %d, isDecimal: %d, op_int: %d\n", isAbsoluteX, count, isDecimal, op_int);
-						
 						if(!indirectY && !indirectX && isIndirect){
 							printerr("Invalid indirect addressing");
 							return false;

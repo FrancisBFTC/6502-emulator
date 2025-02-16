@@ -1,6 +1,6 @@
 nop
 label1:
-	bpl label2
+	bpl label1
 	bcc label2
 	bne label1
 	nop
