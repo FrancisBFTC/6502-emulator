@@ -7,3 +7,4 @@ label1:
 	bne label1
 label2:
 	nop
+.BYTE 255, 254, 253

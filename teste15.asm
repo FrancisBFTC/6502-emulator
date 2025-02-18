@@ -1,9 +1,8 @@
-define label5 $000
-define label6 $000
 nop
 label1:
 	lda dados
 	jmp label2
+	nop
 	nop
 	nop
 label2 :

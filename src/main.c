@@ -94,7 +94,7 @@ DefineList *define_list;
 DcbList *dcb_list;
 LabelList *label_list;
 
-#define MNEMONICS_SIZE 	57
+#define MNEMONICS_SIZE 	58
 const char* mnemonics[] = {
 	"ADC",
 	"AND",
@@ -171,12 +171,14 @@ const char* mnemonics[] = {
 	"TYA",
 	"DEY",
 	"INY",
-	"DCB"
+	"DCB",
+	".BYTE"
 };
 
-#define DIRECTIVES_SIZE 	2
+#define DIRECTIVES_SIZE 	3
 const char* directives[] = {
 	"DCB",
+	".BYTE",
 	"DEFINE"
 };
 
@@ -220,7 +222,7 @@ const unsigned short addressing[] = {
 };
 
 int* process[] = {
-	(int*)proc_dcb, (int*)proc_define
+	(int*)proc_dcb, (int*)proc_dcb, (int*)proc_define
 };
 
 void printerr(const char* msg){
@@ -386,7 +388,7 @@ void proc_define(){
 }
 
 bool dcb_process(){
-	if(mnemonic_index == 56){
+	if(mnemonic_index == 56 || mnemonic_index == 57){
 		DcbList* dcb = getdcb(dcb_list, linenum);
 		memcpy(&code_address[code_index], dcb->value, dcb->length);
 		code_index += dcb->length;
@@ -842,7 +844,7 @@ bool generator(){
 }
 
 bool parser(){
-	if(mnemonic_index == 56)
+	if(mnemonic_index == 56 || mnemonic_index == 57)
 		return true;
 	if(!isMnemonic){
 		if(!addressing[mnemonic_index]){
@@ -1023,7 +1025,7 @@ bool tokenizer(){
     		isMnemonic = true;
 		}
 		
-		if(strcmp(token, "DEFINE") != 0 && strcmp(token, "DCB") != 0 && count_tok > 0){
+		if(strcmp(token, "DEFINE") != 0 && strcmp(token, "DCB") != 0 && strcmp(token, ".BYTE") != 0 && count_tok > 0){
 			isDefinition = check_definition();
 			if(isDefinition == -1)
 				return false;
@@ -1061,7 +1063,7 @@ bool tokenizer(){
 			if(mnemonic_index == -1)
 				return calc_label();	
 			
-			if(i == 56)
+			if(i == 56 || i == 57)
 				break;
 		}
 			
