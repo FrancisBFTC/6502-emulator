@@ -28,6 +28,8 @@ void printerr(const char*);
 void printwarn(const char*);
 bool recursive_def(char*);
 
+char* replace(char*, const char*, const char*);
+
 #define MAX_LINE_LENGTH 1024
 #define MEMORY_EMULATOR 65535
 
@@ -286,9 +288,19 @@ void proc_dcb(){
 		isHexa = operand[i] == '$';
 		isNum = operand[i] >= 0x30 && operand[i] <= 0x39;
 		if(!isHexa && !isNum && operand[i] != ','){
-			directive_error = true;
-			printerr("Invalid defined value - use number");
-			return;
+			int namelen = strcspn(&operand[i], ",");
+			char name[namelen+1];
+			memcpy(name, &operand[i], namelen);
+			name[namelen] = 0;
+			DefineList* list = getdef(define_list, name);
+			if(list != NULL){
+				operand = replace(operand, list->name, list->value);
+				continue;
+			}else{
+				directive_error = true;
+				printerr("Invalid or Undefined value - use number or define this name");
+				return;	
+			}
 		}
 		if(isHexa || isNum){
 			char val[4] = {0};
@@ -411,14 +423,12 @@ bool recursive_def(char* value){
 }
 
 char* replace(char* token, const char* old_substr, const char* new_substr){
-	char* pos;
-	int old_len = strlen(old_substr);
-	int new_len = strlen(new_substr);
-	int buf_len = strlen(token) + (new_len - old_len);
-	char* buffer = (char*) malloc(buf_len);
-	
-	pos = strstr(token, old_substr);
+	char* pos = strstr(token, old_substr);
 	if(pos != NULL){
+		int old_len = strlen(old_substr);
+		int new_len = strlen(new_substr);
+		int buf_len = strlen(token) + (new_len - old_len);
+		char* buffer = (char*) malloc(buf_len);
 		int prefix_len = pos - token;
 		strncpy(buffer, token, prefix_len);
 		buffer[prefix_len] = '\0';
