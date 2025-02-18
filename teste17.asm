@@ -1,0 +1,5 @@
+define ABS $A038
+define WARNING $A035
+.BYTE >ABS,<ABS
+.BYTE WARNING
+.BYTE >$4041, <$4041

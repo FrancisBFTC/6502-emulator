@@ -284,7 +284,14 @@ void proc_dcb(){
 	unsigned char* value = (unsigned char*) malloc(1);
 	bool isHexa = false;
 	bool isNum = false;
+	bool isLowByte = false;
+	bool isHighByte = false;
+	bool isBitIsolate = false;
 	while(operand[i] != NULL){
+		isLowByte = operand[i] == '>';
+		isHighByte = operand[i] == '<';
+		isBitIsolate = (isLowByte || isHighByte);
+		if(isBitIsolate) ++i;
 		isHexa = operand[i] == '$';
 		isNum = operand[i] >= 0x30 && operand[i] <= 0x39;
 		if(!isHexa && !isNum && operand[i] != ','){
@@ -295,6 +302,7 @@ void proc_dcb(){
 			DefineList* list = getdef(define_list, name);
 			if(list != NULL){
 				operand = replace(operand, list->name, list->value);
+				if(isBitIsolate) --i;
 				continue;
 			}else{
 				directive_error = true;
@@ -303,7 +311,7 @@ void proc_dcb(){
 			}
 		}
 		if(isHexa || isNum){
-			char val[4] = {0};
+			char val[10] = {0};
 			int j = 0;
 			if(isHexa) i = i + 1;
 			while(operand[i] != ',' && operand[i] != NULL)
@@ -311,10 +319,10 @@ void proc_dcb(){
 			val[j] = 0;
 			
 			int num = (isHexa) ? strtol(val, &endptr, 16) : strtol(val, &endptr, 10);
-			if((j > 2 && isHexa) || (num > 255 && !isHexa))
+			if(((j > 2 && isHexa) || (num > 255 && !isHexa)) && !isBitIsolate)
 				printwarn("DCB byte is larger than 8-bit. Only low byte will be considered");
 		
-			value[length++] = (unsigned char) num & 0xFF;
+			value[length++] = (isHighByte) ? (num & 0xFF00) >> 8 : num & 0xFF;
 			value = (char*) realloc(value, length+1);
 			if (*endptr != '\0') {
 				directive_error = true;
@@ -1019,6 +1027,7 @@ bool tokenizer(){
 	int count_tok = 0;
 	reset_states();
 	isDefinition = 0;
+	isDirective = false;
 	
     while (token != NULL) {
     	isLineComment = token[0] == ';' || isLineComment;
@@ -1035,7 +1044,7 @@ bool tokenizer(){
     		isMnemonic = true;
 		}
 		
-		if(strcmp(token, "DEFINE") != 0 && strcmp(token, "DCB") != 0 && strcmp(token, ".BYTE") != 0 && count_tok > 0){
+		if(count_tok > 0){
 			isDefinition = check_definition();
 			if(isDefinition == -1)
 				return false;
@@ -1071,9 +1080,9 @@ bool tokenizer(){
 				
 			mnemonic_index = get_mnemonic();
 			if(mnemonic_index == -1)
-				return calc_label();	
-			
-			if(i == 56 || i == 57)
+				return calc_label();
+		
+			if(mnemonic_index == 56 || mnemonic_index == 57)
 				break;
 		}
 			
