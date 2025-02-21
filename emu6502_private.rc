@@ -10,8 +10,8 @@ A ICON "emu6502.ico"
 // TO CHANGE VERSION INFORMATION, EDIT PROJECT OPTIONS...
 //
 1 VERSIONINFO
-FILEVERSION 0,9,0,89
-PRODUCTVERSION 0,9,0,89
+FILEVERSION 0,9,0,91
+PRODUCTVERSION 0,9,0,91
 FILETYPE VFT_APP
 {
   BLOCK "StringFileInfo"
@@ -19,14 +19,14 @@ FILETYPE VFT_APP
     BLOCK "040904E4"
     {
       VALUE "CompanyName", "Wenderson Anjos (KiddieOS.Community)"
-      VALUE "FileVersion", "0.9.0.89"
+      VALUE "FileVersion", "0.9.0.91"
       VALUE "FileDescription", "6502 Assembler and Emulator for console"
       VALUE "InternalName", ""
       VALUE "LegalCopyright", ""
       VALUE "LegalTrademarks", ""
       VALUE "OriginalFilename", ""
       VALUE "ProductName", "emu6502"
-      VALUE "ProductVersion", "0.9.0.89"
+      VALUE "ProductVersion", "0.9.0.91"
     }
   }
   BLOCK "VarFileInfo"

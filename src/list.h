@@ -3,6 +3,7 @@ struct node_def {
 	int line;
 	char name[256];
 	char value[256];
+	char refs[256];
 	struct node_def * next;
 };
 typedef struct node_def DefineList;
@@ -20,6 +21,8 @@ typedef struct node_dcb DcbList;
 struct node_refs {
 	int addr;
 	bool relative;
+	bool isDcb;
+	bool isHigh;
 	struct node_refs * next;
 };
 typedef struct node_refs RefsAddr;
@@ -53,10 +56,17 @@ LabelList* begin_lab(){
 }
 
 // Insert a new node
-DefineList* insertdef(DefineList* list, int line, char name[], char value[]){
+DefineList* insertdef(DefineList* list, int line, char name[], char value[], char refs[]){
 	DefineList *new_node = (DefineList*) malloc(sizeof(DefineList));
 	strcpy(new_node->name, name);
-	strcpy(new_node->value, value);
+	if(refs == NULL){
+		strcpy(new_node->value, value);
+		new_node->refs[0] = refs;
+	}else{
+		strcpy(new_node->refs, refs);
+		new_node->value[0] = value;
+	}
+	
 	new_node->line = line;
 	new_node->next = list;
 	return new_node;
@@ -84,10 +94,12 @@ LabelList* insertlab(LabelList* list, int line, char name[], int addr){
 }
 
 // Insert a new node
-RefsAddr* insertaddr(RefsAddr* list, int addr, bool relative){
+RefsAddr* insertaddr(RefsAddr* list, int addr, bool relative, bool isdcb, bool isHigh){
 	RefsAddr *new_node = (RefsAddr*) malloc(sizeof(RefsAddr));
 	new_node->addr = addr;
 	new_node->relative = relative;
+	new_node->isDcb = isdcb;
+	new_node->isHigh = isHigh;
 	new_node->next = list;
 	return new_node;
 }
@@ -145,16 +157,26 @@ void setref(RefsAddr *list, char *code_addr, int addr){
 			int PC = 0x600 + op_index - 1;
 			code_addr[op_index] = ((addr & 0xFF) - (PC + 2));
 		}else{
-			code_addr[op_index] = (addr & 0xFF);
-			code_addr[op_index+1] = (addr & 0xFF00) >> 8;
+			if(li->isDcb){
+				code_addr[li->addr] = (li->isHigh) ? (addr & 0xFF00) >> 8 : (addr & 0xFF);	
+			}else{
+				code_addr[op_index] = (addr & 0xFF);
+				code_addr[op_index+1] = (addr & 0xFF00) >> 8;
+			}
 		}
 	}
 }
 
 // show each node the list
 void showdef(DefineList *list){
-	for(DefineList *li = list; li != NULL; li = li->next)
-		printf("name = %s, value = %s\n", li->name, li->value);
+	for(DefineList *li = list; li != NULL; li = li->next){
+		if(li->refs[0] == 0)
+			printf("name = %s, value = %s, refs = none\n", li->name, li->value);
+		else if(li->value[0] == 0)
+				printf("name = %s, value = none, refs = %s\n", li->name, li->refs);
+	}
+		
+		
 }
 
 // show each node the list

@@ -81,6 +81,8 @@ bool isAbsoluteY = false;
 bool isAccumulator = false;
 bool isLabel = false;
 bool isRelative = false;
+bool isAllocator = false;
+bool isHigh = false;
 
 bool isDecimal = false;
 
@@ -88,6 +90,7 @@ bool toIgnore = false;
 bool isLineComment = false;
 bool directive_error = false;
 int code_index = 0;
+int dcb_index = 0;
 
 unsigned char *memory;
 unsigned char *code_address;
@@ -177,10 +180,8 @@ const char* mnemonics[] = {
 	".BYTE"
 };
 
-#define DIRECTIVES_SIZE 	3
+#define DIRECTIVES_SIZE 	1
 const char* directives[] = {
-	"DCB",
-	".BYTE",
 	"DEFINE"
 };
 
@@ -224,7 +225,7 @@ const unsigned short addressing[] = {
 };
 
 int* process[] = {
-	(int*)proc_dcb, (int*)proc_dcb, (int*)proc_define
+	(int*)proc_define
 };
 
 void printerr(const char* msg){
@@ -270,6 +271,9 @@ void reset_states(){
 	isLabel = false;
 	isRelative = false;
 	isLineComment = false;
+	isAllocator = false;
+	isHigh = false;
+	dcb_index = 0;
 }
 
 void proc_dcb(){
@@ -278,6 +282,7 @@ void proc_dcb(){
 	token = strtok(NULL, " ");
 	while(token != NULL)
 		format_operand();
+	token = operand;
 	
 	int i = 0;
 	int length = 0;
@@ -287,18 +292,31 @@ void proc_dcb(){
 	bool isLowByte = false;
 	bool isHighByte = false;
 	bool isBitIsolate = false;
-	while(operand[i] != NULL){
-		isLowByte = operand[i] == '>';
-		isHighByte = operand[i] == '<';
+	while(token[i] != NULL){
+		isLowByte = token[i] == '>';
+		isHighByte = token[i] == '<';
+		isHigh = isHighByte;
 		isBitIsolate = (isLowByte || isHighByte);
 		if(isBitIsolate) ++i;
-		isHexa = operand[i] == '$';
-		isNum = operand[i] >= 0x30 && operand[i] <= 0x39;
-		if(!isHexa && !isNum && operand[i] != ','){
-			int namelen = strcspn(&operand[i], ",");
+		isHexa = token[i] == '$';
+		isNum = token[i] >= 0x30 && token[i] <= 0x39;
+		if(!isHexa && !isNum && token[i] != ','){
+			int namelen = strcspn(&token[i], ",");
 			char name[namelen+1];
-			memcpy(name, &operand[i], namelen);
+			memcpy(name, &token[i], namelen);
 			name[namelen] = 0;
+			
+			dcb_index = length;
+			
+			if(replace_name(name) != -1){
+				if(isBitIsolate) --i;
+				continue;
+			}else{
+				directive_error = true;
+				printerr("Invalid or Undefined value - use number or define this name");
+				return;	
+			}
+			/*
 			DefineList* list = getdef(define_list, name);
 			if(list != NULL){
 				operand = replace(operand, list->name, list->value);
@@ -309,13 +327,14 @@ void proc_dcb(){
 				printerr("Invalid or Undefined value - use number or define this name");
 				return;	
 			}
+			*/
 		}
 		if(isHexa || isNum){
 			char val[10] = {0};
 			int j = 0;
 			if(isHexa) i = i + 1;
-			while(operand[i] != ',' && operand[i] != NULL)
-				val[j++] = operand[i++];
+			while(token[i] != ',' && token[i] != NULL)
+				val[j++] = token[i++];
 			val[j] = 0;
 			
 			int num = (isHexa) ? strtol(val, &endptr, 16) : strtol(val, &endptr, 10);
@@ -464,7 +483,8 @@ int replace_name(char* name){
 				isLabel = true;
 				
 			if(label->addr == 0x0000){
-				label->refs = insertaddr(label->refs, code_index, isBranch);
+				int addr_index = code_index + dcb_index;
+				label->refs = insertaddr(label->refs, addr_index, isBranch, isAllocator, isHigh);
 			}
 			sprintf(str, "%d", label->addr);
 				
@@ -862,8 +882,11 @@ bool generator(){
 }
 
 bool parser(){
-	if(mnemonic_index == 56 || mnemonic_index == 57)
+	if(isAllocator){
+		proc_dcb();
 		return true;
+	}
+		
 	if(!isMnemonic){
 		if(!addressing[mnemonic_index]){
 			printerr("Instruction expect 0 operand. Given 1");
@@ -1082,7 +1105,8 @@ bool tokenizer(){
 			if(mnemonic_index == -1)
 				return calc_label();
 		
-			if(mnemonic_index == 56 || mnemonic_index == 57)
+			isAllocator = mnemonic_index == 56 || mnemonic_index == 57;
+			if(isAllocator)
 				break;
 		}
 			
