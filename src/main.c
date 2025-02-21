@@ -408,13 +408,11 @@ void proc_define(){
 			//printerr("Undefined value or decimal error");
 			//directive_error = true;
 			define_list = insertdef(define_list, linenum, name, NULL, value);
-			return;
-		}else{
-			define_list = insertdef(define_list, linenum, name, value, NULL);
+			printf("0: name: %s, value: %s\n", name, value);
 			return;
 		}
 	}
-	
+	define_list = insertdef(define_list, linenum, name, value, NULL);
 }
 
 bool dcb_process(){
