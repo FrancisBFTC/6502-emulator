@@ -316,18 +316,6 @@ void proc_dcb(){
 				printerr("Invalid or Undefined value - use number or define this name");
 				return;	
 			}
-			/*
-			DefineList* list = getdef(define_list, name);
-			if(list != NULL){
-				operand = replace(operand, list->name, list->value);
-				if(isBitIsolate) --i;
-				continue;
-			}else{
-				directive_error = true;
-				printerr("Invalid or Undefined value - use number or define this name");
-				return;	
-			}
-			*/
 		}
 		if(isHexa || isNum){
 			char val[10] = {0};
@@ -417,17 +405,20 @@ void proc_define(){
 		}
 	}else{
 		if(!recursive_def(value)) {
-			printerr("Undefined value or decimal error");
-			directive_error = true;
+			//printerr("Undefined value or decimal error");
+			//directive_error = true;
+			define_list = insertdef(define_list, linenum, name, NULL, value);
+			return;
+		}else{
+			define_list = insertdef(define_list, linenum, name, value, NULL);
 			return;
 		}
 	}
-	 
-	define_list = insertdef(define_list, linenum, name, value);
+	
 }
 
 bool dcb_process(){
-	if(mnemonic_index == 56 || mnemonic_index == 57){
+	if(isAllocator){
 		DcbList* dcb = getdcb(dcb_list, linenum);
 		memcpy(&code_address[code_index], dcb->value, dcb->length);
 		code_index += dcb->length;
@@ -494,7 +485,7 @@ int replace_name(char* name){
 			return -1;	
 		}
 	}else{
-		value = definition->value;
+		value = (definition->refs[0] == 0) ? definition->value : definition->refs;
 	}
 	token = replace(token, name, value);
 	return 1;	
