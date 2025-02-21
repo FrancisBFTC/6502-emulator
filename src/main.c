@@ -486,6 +486,7 @@ int replace_name(char* name){
 		}
 	}else{
 		value = (definition->refs[0] == 0) ? definition->value : definition->refs;
+		return replace_name(value);
 	}
 	token = replace(token, name, value);
 	return 1;	
