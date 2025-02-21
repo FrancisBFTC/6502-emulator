@@ -485,8 +485,12 @@ int replace_name(char* name){
 			return -1;	
 		}
 	}else{
-		value = (definition->refs[0] == 0) ? definition->value : definition->refs;
-		return replace_name(value);
+		if (definition->refs[0] == 0){
+			value = definition->value;
+		}else{
+			value = definition->refs;
+			return replace_name(value);
+		}
 	}
 	token = replace(token, name, value);
 	return 1;	
@@ -718,6 +722,9 @@ void assembler(const char *filename) {
 		perror("Error: The maximum program size is 2560 bytes.");
         exit(EXIT_FAILURE);
 	}
+	
+	if(define_list != NULL)
+		showdef(define_list);
 			
 	if(isValid){
 		unsigned short address = 0x600;
@@ -733,6 +740,7 @@ void assembler(const char *filename) {
 		}	
 	}
 	
+		
     fclose(file);
     if(define_list != NULL) 
 		freedef(define_list);
