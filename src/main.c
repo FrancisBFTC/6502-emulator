@@ -408,7 +408,6 @@ void proc_define(){
 			//printerr("Undefined value or decimal error");
 			//directive_error = true;
 			define_list = insertdef(define_list, linenum, name, NULL, value);
-			printf("0: name: %s, value: %s\n", name, value);
 			return;
 		}
 	}
@@ -492,9 +491,7 @@ int replace_name(char* name){
 			return replace_name(value);
 		}
 	}
-	printf("0: name: %s, value: %s, token: %s\n", name, value, token);
 	token = replace(token, name, value);
-	printf("1: name: %s, value: %s, token: %s\n", name, value, token);
 	return 1;	
 }
 
@@ -726,9 +723,6 @@ void assembler(const char *filename) {
 		perror("Error: The maximum program size is 2560 bytes.");
         exit(EXIT_FAILURE);
 	}
-	
-	if(define_list != NULL)
-		showdef(define_list);
 			
 	if(isValid){
 		unsigned short address = 0x600;
@@ -1072,9 +1066,7 @@ bool tokenizer(){
 		}
 		
 		if(count_tok > 0){
-			printf("Token 0: %s\n", token);
 			isDefinition = check_definition();
-			printf("Token 1: %s\n", token);
 			if(isDefinition == -1)
 				return false;
 		}
