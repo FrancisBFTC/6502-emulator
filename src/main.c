@@ -28,6 +28,8 @@ void printerr(const char*);
 void printwarn(const char*);
 bool recursive_def(char*);
 
+char* replace(char*, const char*, const char*);
+
 #define MAX_LINE_LENGTH 1024
 #define MEMORY_EMULATOR 65535
 
@@ -79,6 +81,8 @@ bool isAbsoluteY = false;
 bool isAccumulator = false;
 bool isLabel = false;
 bool isRelative = false;
+bool isAllocator = false;
+bool isHigh = false;
 
 bool isDecimal = false;
 
@@ -86,6 +90,7 @@ bool toIgnore = false;
 bool isLineComment = false;
 bool directive_error = false;
 int code_index = 0;
+int dcb_index = 0;
 
 unsigned char *memory;
 unsigned char *code_address;
@@ -94,7 +99,7 @@ DefineList *define_list;
 DcbList *dcb_list;
 LabelList *label_list;
 
-#define MNEMONICS_SIZE 	57
+#define MNEMONICS_SIZE 	58
 const char* mnemonics[] = {
 	"ADC",
 	"AND",
@@ -171,12 +176,12 @@ const char* mnemonics[] = {
 	"TYA",
 	"DEY",
 	"INY",
-	"DCB"
+	"DCB",
+	".BYTE"
 };
 
-#define DIRECTIVES_SIZE 	2
+#define DIRECTIVES_SIZE 	1
 const char* directives[] = {
-	"DCB",
 	"DEFINE"
 };
 
@@ -220,7 +225,7 @@ const unsigned short addressing[] = {
 };
 
 int* process[] = {
-	(int*)proc_dcb, (int*)proc_define
+	(int*)proc_define
 };
 
 void printerr(const char* msg){
@@ -266,6 +271,9 @@ void reset_states(){
 	isLabel = false;
 	isRelative = false;
 	isLineComment = false;
+	isAllocator = false;
+	isHigh = false;
+	dcb_index = 0;
 }
 
 void proc_dcb(){
@@ -274,33 +282,54 @@ void proc_dcb(){
 	token = strtok(NULL, " ");
 	while(token != NULL)
 		format_operand();
+	token = operand;
 	
 	int i = 0;
 	int length = 0;
 	unsigned char* value = (unsigned char*) malloc(1);
 	bool isHexa = false;
 	bool isNum = false;
-	while(operand[i] != NULL){
-		isHexa = operand[i] == '$';
-		isNum = operand[i] >= 0x30 && operand[i] <= 0x39;
-		if(!isHexa && !isNum && operand[i] != ','){
-			directive_error = true;
-			printerr("Invalid defined value - use number");
-			return;
+	bool isLowByte = false;
+	bool isHighByte = false;
+	bool isBitIsolate = false;
+	while(token[i] != NULL){
+		isLowByte = token[i] == '>';
+		isHighByte = token[i] == '<';
+		isHigh = isHighByte;
+		isBitIsolate = (isLowByte || isHighByte);
+		if(isBitIsolate) ++i;
+		isHexa = token[i] == '$';
+		isNum = token[i] >= 0x30 && token[i] <= 0x39;
+		if(!isHexa && !isNum && token[i] != ','){
+			int namelen = strcspn(&token[i], ",");
+			char name[namelen+1];
+			memcpy(name, &token[i], namelen);
+			name[namelen] = 0;
+			
+			dcb_index = length;
+			
+			if(replace_name(name) != -1){
+				if(isBitIsolate) --i;
+				continue;
+			}else{
+				directive_error = true;
+				printerr("Invalid or Undefined value - use number or define this name");
+				return;	
+			}
 		}
 		if(isHexa || isNum){
-			char val[4] = {0};
+			char val[10] = {0};
 			int j = 0;
 			if(isHexa) i = i + 1;
-			while(operand[i] != ',' && operand[i] != NULL)
-				val[j++] = operand[i++];
+			while(token[i] != ',' && token[i] != NULL)
+				val[j++] = token[i++];
 			val[j] = 0;
 			
 			int num = (isHexa) ? strtol(val, &endptr, 16) : strtol(val, &endptr, 10);
-			if((j > 2 && isHexa) || (num > 255 && !isHexa))
+			if(((j > 2 && isHexa) || (num > 255 && !isHexa)) && !isBitIsolate)
 				printwarn("DCB byte is larger than 8-bit. Only low byte will be considered");
 		
-			value[length++] = (unsigned char) num & 0xFF;
+			value[length++] = (isHighByte) ? (num & 0xFF00) >> 8 : num & 0xFF;
 			value = (char*) realloc(value, length+1);
 			if (*endptr != '\0') {
 				directive_error = true;
@@ -376,17 +405,17 @@ void proc_define(){
 		}
 	}else{
 		if(!recursive_def(value)) {
-			printerr("Undefined value or decimal error");
-			directive_error = true;
+			//printerr("Undefined value or decimal error");
+			//directive_error = true;
+			define_list = insertdef(define_list, linenum, name, NULL, value);
 			return;
 		}
 	}
-	 
-	define_list = insertdef(define_list, linenum, name, value);
+	define_list = insertdef(define_list, linenum, name, value, NULL);
 }
 
 bool dcb_process(){
-	if(mnemonic_index == 56){
+	if(isAllocator){
 		DcbList* dcb = getdcb(dcb_list, linenum);
 		memcpy(&code_address[code_index], dcb->value, dcb->length);
 		code_index += dcb->length;
@@ -409,14 +438,12 @@ bool recursive_def(char* value){
 }
 
 char* replace(char* token, const char* old_substr, const char* new_substr){
-	char* pos;
-	int old_len = strlen(old_substr);
-	int new_len = strlen(new_substr);
-	int buf_len = strlen(token) + (new_len - old_len);
-	char* buffer = (char*) malloc(buf_len);
-	
-	pos = strstr(token, old_substr);
+	char* pos = strstr(token, old_substr);
 	if(pos != NULL){
+		int old_len = strlen(old_substr);
+		int new_len = strlen(new_substr);
+		int buf_len = strlen(token) + (new_len - old_len);
+		char* buffer = (char*) malloc(buf_len);
 		int prefix_len = pos - token;
 		strncpy(buffer, token, prefix_len);
 		buffer[prefix_len] = '\0';
@@ -427,7 +454,7 @@ char* replace(char* token, const char* old_substr, const char* new_substr){
 		
 		return buffer;
 	}
-	return NULL;
+	return token;
 }
 
 int replace_name(char* name){
@@ -444,17 +471,25 @@ int replace_name(char* name){
 				isLabel = true;
 				
 			if(label->addr == 0x0000){
-				label->refs = insertaddr(label->refs, code_index, isBranch);
+				int addr_index = code_index + dcb_index;
+				label->refs = insertaddr(label->refs, addr_index, isBranch, isAllocator, isHigh);
 			}
 			sprintf(str, "%d", label->addr);
 				
-			value = str;	
+			value = str;
+				
 		}else{
 			printerr("Undefined value");
 			return -1;	
 		}
 	}else{
-		value = definition->value;
+		if (definition->refs[0] == 0){
+			value = definition->value;
+		}else{
+			value = definition->refs;
+			token = replace(token, name, value);
+			return replace_name(value);
+		}
 	}
 	token = replace(token, name, value);
 	return 1;	
@@ -475,8 +510,10 @@ int check_definition(){
 	if(*endptr != '\0'){
 		strtol(&name[0], &endptr, 16);
 		bool possibleHexaError = (!index && token[index] != '$') || (token[index-1] == '#' && index);
-		if(*endptr != '\0' || possibleHexaError)
+		if(*endptr != '\0' || possibleHexaError){
 			return replace_name(name);
+		}
+			
 	}
 
 	return 0;
@@ -701,6 +738,7 @@ void assembler(const char *filename) {
 		}	
 	}
 	
+		
     fclose(file);
     if(define_list != NULL) 
 		freedef(define_list);
@@ -842,8 +880,11 @@ bool generator(){
 }
 
 bool parser(){
-	if(mnemonic_index == 56)
+	if(isAllocator){
+		proc_dcb();
 		return true;
+	}
+		
 	if(!isMnemonic){
 		if(!addressing[mnemonic_index]){
 			printerr("Instruction expect 0 operand. Given 1");
@@ -1007,6 +1048,7 @@ bool tokenizer(){
 	int count_tok = 0;
 	reset_states();
 	isDefinition = 0;
+	isDirective = false;
 	
     while (token != NULL) {
     	isLineComment = token[0] == ';' || isLineComment;
@@ -1023,7 +1065,7 @@ bool tokenizer(){
     		isMnemonic = true;
 		}
 		
-		if(strcmp(token, "DEFINE") != 0 && strcmp(token, "DCB") != 0 && count_tok > 0){
+		if(count_tok > 0){
 			isDefinition = check_definition();
 			if(isDefinition == -1)
 				return false;
@@ -1059,9 +1101,10 @@ bool tokenizer(){
 				
 			mnemonic_index = get_mnemonic();
 			if(mnemonic_index == -1)
-				return calc_label();	
-			
-			if(i == 56)
+				return calc_label();
+		
+			isAllocator = mnemonic_index == 56 || mnemonic_index == 57;
+			if(isAllocator)
 				break;
 		}
 			
