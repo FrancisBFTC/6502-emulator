@@ -455,7 +455,7 @@ char* replace(char* token, const char* old_substr, const char* new_substr){
 		
 		return buffer;
 	}
-	return NULL;
+	return token;
 }
 
 int replace_name(char* name){
@@ -477,7 +477,8 @@ int replace_name(char* name){
 			}
 			sprintf(str, "%d", label->addr);
 				
-			value = str;	
+			value = str;
+				
 		}else{
 			printerr("Undefined value");
 			return -1;	
@@ -487,10 +488,13 @@ int replace_name(char* name){
 			value = definition->value;
 		}else{
 			value = definition->refs;
+			token = replace(token, name, value);
 			return replace_name(value);
 		}
 	}
+	printf("0: name: %s, value: %s, token: %s\n", name, value, token);
 	token = replace(token, name, value);
+	printf("1: name: %s, value: %s, token: %s\n", name, value, token);
 	return 1;	
 }
 
@@ -509,8 +513,10 @@ int check_definition(){
 	if(*endptr != '\0'){
 		strtol(&name[0], &endptr, 16);
 		bool possibleHexaError = (!index && token[index] != '$') || (token[index-1] == '#' && index);
-		if(*endptr != '\0' || possibleHexaError)
+		if(*endptr != '\0' || possibleHexaError){
 			return replace_name(name);
+		}
+			
 	}
 
 	return 0;
@@ -1066,7 +1072,9 @@ bool tokenizer(){
 		}
 		
 		if(count_tok > 0){
+			printf("Token 0: %s\n", token);
 			isDefinition = check_definition();
+			printf("Token 1: %s\n", token);
 			if(isDefinition == -1)
 				return false;
 		}

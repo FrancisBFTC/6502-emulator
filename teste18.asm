@@ -1,6 +1,5 @@
-;define name6 name5
-define name5 $0101
+define name6 name5
+define name5 $A000
 
 label:
-	lda name5,X
-	;jmp name6
+	lda name6,X
