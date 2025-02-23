@@ -1,7 +1,7 @@
 Message {
- Name = "Test Script 1"
- Success = "Test passed successfully!"
- Error 	 = "Test failed!"
+ Name = "Test Script 2"
+ Success = "O teste foi aprovado!"
+ Error 	 = "O teste falhou!"
  Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
 }
 
@@ -18,7 +18,6 @@ test jmp_test1{
  Output = 	"Code Length: 3" &
 			"" &
 			"0x600: 4C B0 B0"
- Setup = 	"C:\\6502-emulator\\asm.exe -m"
 }
 
 test error_test{

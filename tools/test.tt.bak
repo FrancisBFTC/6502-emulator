@@ -27,3 +27,32 @@ test error_test{
 			"" &
 			"0x600: BD 00 A0"
 }
+
+Message {
+ Name = "Test Script 2"
+ Success = "O teste foi aprovado!"
+ Error 	 = "O teste falhou!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test lda_test1{
+ Input  =	"lda $a000,X" &
+			"NOP"
+ Output = 	"Code Length: 4" &
+			"" &
+			"0x600: BD 00 A0 EA"
+}
+
+test jmp_test1{
+ Input 	= 	"jmp $B0B0"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 4C B0 B0"
+}
+
+test error_test{
+ Input 	= 	"lda ($a000,Y)"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: BD 00 A0"
+}
