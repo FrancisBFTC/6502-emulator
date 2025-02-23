@@ -729,11 +729,11 @@ void assembler(const char *filename) {
 		printf("Code Length: %d\n", code_index);
 		for(int i = 0; i < code_index; i++){
 			if(i % 16 == 0)
-				printf("\n0x%x: ", address);
+				printf("\n0x%x:", address);
 			if(code_address[i] < 0x10)
-				printf("0%X ", code_address[i]);
+				printf(" 0%X", code_address[i]);
 			else
-				printf("%X ", code_address[i]);
+				printf(" %X", code_address[i]);
 			address++;
 		}	
 	}
