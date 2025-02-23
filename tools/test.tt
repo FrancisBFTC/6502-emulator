@@ -1,0 +1,23 @@
+Message {
+ Success = "Global: Test passed successfully!"
+ Error 	 = "Global: Test failed!"
+}
+
+test 1{
+ Input  =	"lda $a000,X" &
+			"NOP"
+ Output = 	"Code Length: 4" &
+			"" &
+			"0x600: BD 00 A0 EA"
+ Setup 	 = 	"C:\\6502-emulator\\emu6502.exe -m"
+ Success = 	"Local: This test passed!"
+}
+
+test 2{
+ Input 	= 	"lda $a000,X"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: BD 00 A0"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+ Error = 	"Local: This test has failed!"
+}
