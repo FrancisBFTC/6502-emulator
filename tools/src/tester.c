@@ -104,11 +104,11 @@ void change_color(int textColor, int backColor){
 	SetConsoleTextAttribute(hConsole, (backColor << 4) | textColor);
 }
 
-void tester(const char* filename, bool verbose){
+bool tester(const char* filename, bool verbose, int* scount, int* fcount, int* tests){
 	FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Erro ao abrir o arquivo");
-        exit(EXIT_FAILURE);
+        return false;
     }
     
     isMessage = false;
@@ -120,6 +120,10 @@ void tester(const char* filename, bool verbose){
     bool isInputMsg = false;
     bool isOutputMsg = false;
     bool isSetupMsg = false;
+    
+    int success_count = 0;
+    int fail_count = 0;
+    int test_count = 0;
     
     change_color(11, 0);
     printf("Processing Tests...\n");
@@ -156,7 +160,7 @@ void tester(const char* filename, bool verbose){
 					break;
 				}else{
 					printf("Error at line %d - Missing '{'", linenum);
-					return;
+					return false;
 				}
 			}else if(strcmp(token, "TEST") == 0){
 					if(linetmp[strcspn(&linetmp[0], "{")] == '{'){
@@ -171,7 +175,7 @@ void tester(const char* filename, bool verbose){
 						break;
 					}else{
 						printf("Error at line %d - Missing '{'", linenum);
-						return;
+						return false;
 					}
 					
 			}else if(strcmp(token, "SUCCESS") == 0 || isSuccessSymbol){
@@ -187,7 +191,7 @@ void tester(const char* filename, bool verbose){
 						}
 					}else{
 						print_msg_error();
-						return;
+						return false;
 					}
 			}else if(strcmp(token, "ERROR") == 0 || isErrorSymbol){
 					index = strcspn(&linetmp[0], "=");
@@ -202,7 +206,7 @@ void tester(const char* filename, bool verbose){
 						}
 					}else{
 						print_msg_error();
-						return;
+						return false;
 					}
 			}else if(strcmp(token, "INPUT") == 0 || isInputSymbol){
 					index = strcspn(&linetmp[0], "=");
@@ -212,7 +216,7 @@ void tester(const char* filename, bool verbose){
 						isInputTmp = isInputMsg;
 					}else{
 						print_test_error();
-						return;
+						return false;
 					}
 			}else if(strcmp(token, "OUTPUT") == 0 || isOutputSymbol){
 					index = strcspn(&linetmp[0], "=");
@@ -222,7 +226,7 @@ void tester(const char* filename, bool verbose){
 						isOutputTmp = isOutputMsg;
 					}else{
 						print_test_error();
-						return;
+						return false;
 					}
 			}else if(strcmp(token, "SETUP") == 0 || isSetupSymbol){
 					index = strcspn(&linetmp[0], "=");
@@ -232,7 +236,7 @@ void tester(const char* filename, bool verbose){
 						isSetupTmp = isSetupMsg;
 					}else{
 						print_test_error();
-						return;
+						return false;
 					}
 			}else{
 				if(token[0] == '}'){
@@ -256,12 +260,14 @@ void tester(const char* filename, bool verbose){
 						char* content = read_file("output.dat");
 						
 						if(strcmp(content, output) == 0){
+							success_count++;
 							change_color(10, 0);
 							if(isSuccessLocal)
 								printf(" %s\n", success_test);
 							else
 								printf(" %s\n", success);
 						}else{
+							fail_count++;
 							change_color(4, 0);
 							if(isErrorLocal)
 								printf(" %s\n", error_test);
@@ -327,6 +333,7 @@ void tester(const char* filename, bool verbose){
 						input = NULL;
 						output = NULL;
 						isTest = false;
+						test_count++;
 					}
 					break;
 				}	
@@ -353,7 +360,7 @@ void tester(const char* filename, bool verbose){
 					
 					if(linetmp[i] != '"'){
 						printf("Error at line %d - Missing '\"' at beginning", linenum);
-						return;
+						return false;
 					}
 					i = i + 1;
 					int position = strcspn(&linetmp[i], "\"");
@@ -363,7 +370,7 @@ void tester(const char* filename, bool verbose){
 					if(linetmp[i+position] != '\"'){
 						printf("char: %c\n", linetmp[i+position]);
 						printf("Error at line %d - Missing '\"' in the end", linenum);
-						return;
+						return false;
 					}else{
 						memcpy(buffer, &linetmp[i], position);
 						buffer[position] = '\0';
@@ -453,7 +460,7 @@ void tester(const char* filename, bool verbose){
 				
 			}else{
 				printf("Error at line %d - No knownledge variable or command\n", linenum);
-				return;
+				return false;
 			}
 			
 			token = strtok(NULL, " ");
@@ -462,23 +469,48 @@ void tester(const char* filename, bool verbose){
 		linenum++;
 	}
 	
+	*scount = success_count;
+	*fcount = fail_count;
+	*tests = test_count;
 	if(success != NULL)
 		free(success);
 	if(error != NULL)
 		free(error);
+		
+	return true;
 }
 
 int main(int argc, char *argv[]) {
+	int passed = 0;
+	int fails = 0;
+	int total = 0;
+	bool interpreted = true;
 	if(argv[1] == NULL){
 		printf("Especifique um arquivo para testes!");
 		return 1;
 	}
 	if(argv[2] != NULL){
 		if(strcmp(argv[2], "-v") == 0 || strcmp(argv[2], "--verbose") == 0)
-			tester(argv[1], true);	
+			interpreted = tester(argv[1], true, &passed, &fails, &total);	
 	}else{
-		tester(argv[1], false);
+		interpreted = tester(argv[1], false, &passed, &fails, &total);
 	}
-
+	
+	if(interpreted){
+		change_color(13, 0);
+		printf(" %d ", total);
+		change_color(11, 0);
+		printf("tests runned.");
+		change_color(13, 0);
+		printf(" %d ", passed);
+		change_color(11, 0);
+		printf("passed.");
+		change_color(13, 0);
+		printf(" %d ", fails);
+		change_color(11, 0);
+		printf("failed.");
+		change_color(7, 0);
+	}
+	
 	return 0;
 }
