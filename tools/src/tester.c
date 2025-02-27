@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <windows.h>
+#include <sys/stat.h>
 
 #define MAX_LINE_LENGTH 1024
 
@@ -83,9 +84,16 @@ char* read_file(const char* filename){
 		return;
 	}
 	
-	fseek(file, 0, SEEK_END);
-	long size = ftell(file);
-	fseek(file, 0, SEEK_SET);
+	//fseek(file, 0, SEEK_END);
+	//long size = ftell(file);
+	//fseek(file, 0, SEEK_SET);
+	struct stat st;
+	if(fstat(fileno(file), &st) != 0){
+		perror("Erro ao obter informações do arquivo.");
+		fclose(file);
+		return NULL;
+	}
+	long size = st.st_size;
 	
 	char* datas = (char*) malloc(size + 1);
 	if(datas == NULL){
@@ -95,22 +103,12 @@ char* read_file(const char* filename){
 	}
 	
 	fread(datas, 1, size, file);
-	datas[size] = '\0';
+	datas[size-2] = '\0';
 	fclose(file);
 	
 	return datas;
 }
 
-/*
-char* testname = NULL;
-char* input = NULL;
-char* output = NULL;
-char* setup = NULL;
-char* success_test = NULL;
-char* error_test = NULL;
-char* setup_test = NULL;
-char* name = NULL;
-*/
 void reset_all(){
 	if(name != NULL)
 		free(name);
@@ -345,7 +343,6 @@ bool tester(const char* filename, bool verbose, int* scount, int* fcount, int* t
 						}else{
 							system(setup);
 						}
-		
 						char* content = read_file("output.dat");
 						
 						if(strcmp(content, output) == 0){
@@ -355,6 +352,8 @@ bool tester(const char* filename, bool verbose, int* scount, int* fcount, int* t
 								printf(" %s\n", success_test);
 							else
 								printf(" %s\n", success);
+							//printf("expect: \n%s\n", output);
+							//printf("content: \n%s\n", content);
 						}else{
 							fail_count++;
 							change_color(4, 0);
@@ -363,6 +362,9 @@ bool tester(const char* filename, bool verbose, int* scount, int* fcount, int* t
 							else
 								printf(" %s\n", error);
 						}
+						//system("del input.dat");
+						//system("del output.dat");
+						free(content);
 						
 						if(verbose){
 							change_color(14, 0);

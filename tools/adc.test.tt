@@ -1,0 +1,84 @@
+Message {
+ Name = "ADC Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate{
+ Input  =	"ADC #$44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 69 44"
+}
+
+test zeropage{
+ Input 	= 	"ADC $44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 65 44"
+}
+
+test zeropagex{
+ Input 	= 	"ADC $44,X"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 75 44"
+}
+
+test absolute{
+ Input 	= 	"ADC $4400"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 6D 00 44"
+}
+
+test absolutex{
+ Input 	= 	"ADC $4400,X"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 7D 00 44"
+}
+
+test absolutey{
+ Input 	= 	"ADC $4400,Y"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 79 00 44"
+}
+
+test indirectx{
+ Input 	= 	"ADC ($44,X)"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 61 44"
+}
+
+test indirecty{
+ Input 	= 	"ADC ($44),Y"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 71 44"
+}
+
+Message {
+ Name = "ADC Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-error{
+ Input  =	"ADC #$44,"
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing."
+}
+
+test indirecty-error{
+ Input  =	"ADC ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing."
+}
+
+test indirectx-error{
+ Input  =	"ADC ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing."
+}
