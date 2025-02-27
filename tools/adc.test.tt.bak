@@ -70,15 +70,83 @@ Message {
 
 test immediate-error{
  Input  =	"ADC #$44,"
- Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing."
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
 }
 
 test indirecty-error{
  Input  =	"ADC ($44,Y)"
- Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing."
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
 }
 
 test indirectx-error{
- Input  =	"ADC ($44,X)"
- Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing."
+ Input  =	"ADC ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test parenthesis-close-error{
+ Input  =	"ADC ($44"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
+}
+
+
+test parenthesis-open-error{
+ Input  =	"ADC $44)"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
+}
+
+test comma-error-x{
+ Input  =	"ADC ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test comma-error-y{
+ Input  =	"ADC ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test invalid-operand-zeropagex{
+ Input  =	"ADC $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test invalid-operand-indirect{
+ Input  =	"ADC ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test expected-operand-error{
+ Input  =	"ADC"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 1 operand. Given 0"
+}
+
+test parse-number-error{
+ Input  =	"ADC $0G0"
+ Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
+}
+
+test missing-register-error{
+ Input  =	"ADC $44,"
+ Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
+}
+
+test immediate-limit-hexa-error{
+ Input  =	"ADC #$440"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test immediate-limit-dec-error{
+ Input  =	"ADC #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test absolute-limit-hexa-error{
+ Input  =	"ADC $44001"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test absolute-limit-dec-error{
+ Input  =	"ADC #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
 }

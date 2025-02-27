@@ -34,19 +34,19 @@ UnitCount=3
 [VersionInfo]
 Major=0
 Minor=9
-Release=0
-Build=95
+Release=4
+Build=105
 LanguageID=1033
 CharsetID=1252
 CompanyName=Wenderson Anjos (KiddieOS.Community)
-FileVersion=0.9.0.95
+FileVersion=0.9.4.105
 FileDescription=6502 Assembler and Emulator for console
 InternalName=
 LegalCopyright=
 LegalTrademarks=
 OriginalFilename=
 ProductName=emu6502
-ProductVersion=0.9.0.95
+ProductVersion=0.9.4.105
 AutoIncBuildNr=1
 SyncProduct=1
 

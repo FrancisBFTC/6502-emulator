@@ -344,7 +344,7 @@ bool tester(const char* filename, bool verbose, int* scount, int* fcount, int* t
 							system(setup);
 						}
 						char* content = read_file("output.dat");
-						
+							
 						if(strcmp(content, output) == 0){
 							success_count++;
 							change_color(10, 0);
@@ -352,8 +352,6 @@ bool tester(const char* filename, bool verbose, int* scount, int* fcount, int* t
 								printf(" %s\n", success_test);
 							else
 								printf(" %s\n", success);
-							//printf("expect: \n%s\n", output);
-							//printf("content: \n%s\n", content);
 						}else{
 							fail_count++;
 							change_color(4, 0);
@@ -361,6 +359,16 @@ bool tester(const char* filename, bool verbose, int* scount, int* fcount, int* t
 								printf(" %s\n", error_test);
 							else
 								printf(" %s\n", error);
+								
+							//printf("expect: \n");
+							//for(int i = 0; i < strlen(output); i++)
+							//	printf("%X ", output[i]);
+							//printf("content: \n");
+							//for(int i = 0; i < strlen(content); i++)
+							//	printf("%X ", content[i]);
+							
+							//printf("expect: \n%s\n", output);
+							//printf("content: \n%x\n", content);
 						}
 						//system("del input.dat");
 						//system("del output.dat");
