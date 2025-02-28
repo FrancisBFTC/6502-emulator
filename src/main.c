@@ -237,7 +237,7 @@ void printwarn(const char* msg){
 }
 
 void error(const char* msg){
-	printf("%s: error at line %d - %s", mnemonic, linenum, msg);
+	printf("%s: error at line %d - %s\n", mnemonic, linenum, msg);
 }
 
 void format_line(){
@@ -479,7 +479,7 @@ int replace_name(char* name){
 			value = str;
 				
 		}else{
-			printerr("Undefined value");
+			printerr("undefined value");
 			return -1;	
 		}
 	}else{
@@ -509,6 +509,8 @@ int check_definition(){
 	int namex = strcspn(&token[index], ")X");
 	int namey = strcspn(&token[index], ")Y");
 	if((name[namex+1] == 'X' || name[namey+1] == 'Y') && (name[namex] == ')' || name[namey] == ')'))
+		return 0;
+	if(name[0] >= 0x30 && name[0] <= 0x39)
 		return 0;
 		
 	name[namelen] = 0;
@@ -983,12 +985,19 @@ bool parse_addressing(int index){
 							printerr("Invalid indirect addressing");
 							return false;
 						}
-						
 						break;
 					}
 					if(operand[i] == ')' && isIndirect)
 						isParenthesisValid = true;
+				}//else{
+					
+				if(!isIndirect && (!isZeroPageX && !isZeroPageY && !isAbsoluteX && !isAbsoluteY)){
+					printerr("Invalid addressing - Missing register");
+					return false;
 				}
+					//break;	
+				//}
+					
 				if(i == operand_len)	break;
 
 				if(operand[i+1] == ')'){
@@ -1009,10 +1018,7 @@ bool parse_addressing(int index){
 					printerr("Missing parenthesis open");
 					return false;
 				}
-				if(!isIndirect && (!isZeroPageX && !isZeroPageY && !isAbsoluteX && !isAbsoluteY)){
-					printerr("Invalid addressing - Missing register");
-					return false;
-				}
+				
 				bool noJump = (mnemonic_index != 26 && mnemonic_index != 27);
 				if(!indirectY && !indirectX && isIndirect && noJump){
 					printerr("Invalid indirect addressing");
