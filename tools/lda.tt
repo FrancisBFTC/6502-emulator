@@ -1,0 +1,162 @@
+Message {
+ Name = "LDA Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate{
+ Input  =	"LDA #$44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: A9 44"
+}
+
+test zeropage{
+ Input 	= 	"LDA $44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: A5 44"
+}
+
+test zeropagex{
+ Input 	= 	"LDA $44,X"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: B5 44"
+}
+
+test absolute{
+ Input 	= 	"LDA $4400"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: AD 00 44"
+}
+
+test absolutex{
+ Input 	= 	"LDA $4400,X"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: BD 00 44"
+}
+
+test absolutey{
+ Input 	= 	"LDA $4400,Y"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: B9 00 44"
+}
+
+test indirectx{
+ Input 	= 	"LDA ($44,X)"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: A1 44"
+}
+
+test indirecty{
+ Input 	= 	"LDA ($44),Y"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: B1 44"
+}
+
+Message {
+ Name = "LDA Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-error{
+ Input  =	"LDA #$44,"
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
+}
+
+test indirecty-error{
+ Input  =	"LDA ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test indirectx-error{
+ Input  =	"LDA ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test parenthesis-close-error{
+ Input  =	"LDA ($44"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
+}
+
+
+test parenthesis-open-error{
+ Input  =	"LDA $44)"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
+}
+
+test comma-error-x{
+ Input  =	"LDA ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test comma-error-y{
+ Input  =	"LDA ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test invalid-operand-zeropagex{
+ Input  =	"LDA $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test invalid-operand-indirect{
+ Input  =	"LDA ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test expected-operand-error{
+ Input  =	"ADC"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 1 operand. Given 0"
+}
+
+test immediate-limit-hexa-error{
+ Input  =	"LDA #$440"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test immediate-limit-dec-error{
+ Input  =	"LDA #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test absolute-limit-hexa-error{
+ Input  =	"LDA $44001"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test absolute-limit-dec-error{
+ Input  =	"LDA 65537"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test parse-number-error{
+ Input  =	"LDA $0G"
+ Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
+}
+
+test missing-register-error{
+ Input  =	"LDA $44,"
+ Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
+}
+
+test indirect-address-error{
+ Input  =	"LDA ($4400)"
+ Output = 	"LDA: error at line 1 - cannot use indirect addressing"
+}
+
+test undefined-error{
+ Input  =	"LDA name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}

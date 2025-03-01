@@ -1,117 +1,117 @@
 Message {
- Name = "ADC Instruction for Machine Code"
+ Name = "AND Instruction for Machine Code"
  Success = "Test passed successfully!"
  Error 	 = "Test failed!"
  Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
 }
 
 test immediate{
- Input  =	"ADC #$44"
+ Input  =	"AND #$44"
  Output = 	"Code Length: 2" &
 			"" &
-			"0x600: 69 44"
+			"0x600: 29 44"
 }
 
 test zeropage{
- Input 	= 	"ADC $44"
+ Input 	= 	"AND $44"
  Output = 	"Code Length: 2" &
 			"" &
-			"0x600: 65 44"
+			"0x600: 25 44"
 }
 
 test zeropagex{
- Input 	= 	"ADC $44,X"
+ Input 	= 	"AND $44,X"
  Output = 	"Code Length: 2" &
 			"" &
-			"0x600: 75 44"
+			"0x600: 35 44"
 }
 
 test absolute{
- Input 	= 	"ADC $4400"
+ Input 	= 	"AND $4400"
  Output = 	"Code Length: 3" &
 			"" &
-			"0x600: 6D 00 44"
+			"0x600: 2D 00 44"
 }
 
 test absolutex{
- Input 	= 	"ADC $4400,X"
+ Input 	= 	"AND $4400,X"
  Output = 	"Code Length: 3" &
 			"" &
-			"0x600: 7D 00 44"
+			"0x600: 3D 00 44"
 }
 
 test absolutey{
- Input 	= 	"ADC $4400,Y"
+ Input 	= 	"AND $4400,Y"
  Output = 	"Code Length: 3" &
 			"" &
-			"0x600: 79 00 44"
+			"0x600: 39 00 44"
 }
 
 test indirectx{
- Input 	= 	"ADC ($44,X)"
+ Input 	= 	"AND ($44,X)"
  Output = 	"Code Length: 2" &
 			"" &
-			"0x600: 61 44"
+			"0x600: 21 44"
 }
 
 test indirecty{
- Input 	= 	"ADC ($44),Y"
+ Input 	= 	"AND ($44),Y"
  Output = 	"Code Length: 2" &
 			"" &
-			"0x600: 71 44"
+			"0x600: 31 44"
 }
 
 Message {
- Name = "ADC Instruction for Syntax Errors"
+ Name = "AND Instruction for Syntax Errors"
  Success = "Test passed successfully!"
  Error 	 = "Test failed!"
  Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
 }
 
 test immediate-error{
- Input  =	"ADC #$44,"
+ Input  =	"AND #$44,"
  Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
 }
 
 test indirecty-error{
- Input  =	"ADC ($44,Y)"
+ Input  =	"AND ($44,Y)"
  Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
 }
 
 test indirectx-error{
- Input  =	"ADC ($44),X"
+ Input  =	"AND ($44),X"
  Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
 }
 
 test parenthesis-close-error{
- Input  =	"ADC ($44"
+ Input  =	"AND ($44"
  Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
 }
 
 
 test parenthesis-open-error{
- Input  =	"ADC $44)"
+ Input  =	"AND $44)"
  Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
 }
 
 test comma-error-x{
- Input  =	"ADC ($44)X"
+ Input  =	"AND ($44)X"
  Output = 	"Error: Syntax error at line 1 - Missing comma separator"
 }
 
 test comma-error-y{
- Input  =	"ADC ($44)Y"
+ Input  =	"AND ($44)Y"
  Output = 	"Error: Syntax error at line 1 - Missing comma separator"
 }
 
 test invalid-operand-zeropagex{
- Input  =	"ADC $44,X3"
+ Input  =	"AND $44,X3"
  Output = 	"Error: Syntax error at line 1 - Invalid operand" &
             "char error -> 3"
 }
 
 test invalid-operand-indirect{
- Input  =	"ADC ($44),Y3"
+ Input  =	"AND ($44),Y3"
  Output = 	"Error: Syntax error at line 1 - Invalid operand" &
             "char error -> 3"
 }
@@ -122,41 +122,41 @@ test expected-operand-error{
 }
 
 test immediate-limit-hexa-error{
- Input  =	"ADC #$440"
+ Input  =	"AND #$440"
  Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
 }
 
 test immediate-limit-dec-error{
- Input  =	"ADC #256"
+ Input  =	"AND #256"
  Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
 }
 
 test absolute-limit-hexa-error{
- Input  =	"ADC $44001"
+ Input  =	"AND $44001"
  Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
 }
 
 test absolute-limit-dec-error{
- Input  =	"ADC 65537"
+ Input  =	"AND 65537"
  Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
 }
 
 test parse-number-error{
- Input  =	"ADC $0G"
+ Input  =	"AND $0G"
  Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
 }
 
 test missing-register-error{
- Input  =	"ADC $44,"
+ Input  =	"AND $44,"
  Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
 }
 
 test indirect-address-error{
- Input  =	"ADC ($4400)"
- Output = 	"ADC: error at line 1 - cannot use indirect addressing"
+ Input  =	"AND ($4400)"
+ Output = 	"AND: error at line 1 - cannot use indirect addressing"
 }
 
-test no-defined-error{
- Input  =	"ADC name"
+test undefined-error{
+ Input  =	"AND name"
  Output = 	"Error: Syntax error at line 1 - undefined value"
 }

@@ -1,0 +1,1 @@
+tester adc.tt and.tt cmp.tt eor.tt lda.tt ora.tt

@@ -1,0 +1,162 @@
+Message {
+ Name = "ORA Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate{
+ Input  =	"ORA #$44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 09 44"
+}
+
+test zeropage{
+ Input 	= 	"ORA $44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 05 44"
+}
+
+test zeropagex{
+ Input 	= 	"ORA $44,X"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 15 44"
+}
+
+test absolute{
+ Input 	= 	"ORA $4400"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 0D 00 44"
+}
+
+test absolutex{
+ Input 	= 	"ORA $4400,X"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 1D 00 44"
+}
+
+test absolutey{
+ Input 	= 	"ORA $4400,Y"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 19 00 44"
+}
+
+test indirectx{
+ Input 	= 	"ORA ($44,X)"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 01 44"
+}
+
+test indirecty{
+ Input 	= 	"ORA ($44),Y"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 11 44"
+}
+
+Message {
+ Name = "ORA Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-error{
+ Input  =	"ORA #$44,"
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
+}
+
+test indirecty-error{
+ Input  =	"ORA ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test indirectx-error{
+ Input  =	"ORA ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test parenthesis-close-error{
+ Input  =	"ORA ($44"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
+}
+
+
+test parenthesis-open-error{
+ Input  =	"ORA $44)"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
+}
+
+test comma-error-x{
+ Input  =	"ORA ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test comma-error-y{
+ Input  =	"ORA ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test invalid-operand-zeropagex{
+ Input  =	"ORA $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test invalid-operand-indirect{
+ Input  =	"ORA ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test expected-operand-error{
+ Input  =	"ADC"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 1 operand. Given 0"
+}
+
+test immediate-limit-hexa-error{
+ Input  =	"ORA #$440"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test immediate-limit-dec-error{
+ Input  =	"ORA #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test absolute-limit-hexa-error{
+ Input  =	"ORA $44001"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test absolute-limit-dec-error{
+ Input  =	"ORA 65537"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test parse-number-error{
+ Input  =	"ORA $0G"
+ Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
+}
+
+test missing-register-error{
+ Input  =	"ORA $44,"
+ Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
+}
+
+test indirect-address-error{
+ Input  =	"ORA ($4400)"
+ Output = 	"ORA: error at line 1 - cannot use indirect addressing"
+}
+
+test undefined-error{
+ Input  =	"ORA name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
