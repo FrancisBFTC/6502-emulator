@@ -117,7 +117,7 @@ test invalid-operand-indirect{
 }
 
 test expected-operand-error{
- Input  =	"ADC"
+ Input  =	"ORA"
  Output = 	"Error: Syntax error at line 1 - Instruction expect 1 operand. Given 0"
 }
 
@@ -159,4 +159,21 @@ test indirect-address-error{
 test undefined-error{
  Input  =	"ORA name"
  Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "ORA Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test zeropagey-denied{
+ Input 	= 	"ORA $44,Y"
+ Output = 	"ORA: error at line 1 - cannot use ZeroPageY addressing"
+}
+
+test indirect-denied{
+ Input  =	"ORA ($4400)"
+ Output = 	"ORA: error at line 1 - cannot use indirect addressing"
 }

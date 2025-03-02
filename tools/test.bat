@@ -1,1 +1,1 @@
-tester adc.tt and.tt cmp.tt eor.tt lda.tt ora.tt
+tester adc.tt and.tt cmp.tt eor.tt lda.tt ora.tt asl.tt bit.tt cpx.tt cpy.tt

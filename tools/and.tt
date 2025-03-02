@@ -117,7 +117,7 @@ test invalid-operand-indirect{
 }
 
 test expected-operand-error{
- Input  =	"ADC"
+ Input  =	"AND"
  Output = 	"Error: Syntax error at line 1 - Instruction expect 1 operand. Given 0"
 }
 
@@ -151,12 +151,24 @@ test missing-register-error{
  Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
 }
 
-test indirect-address-error{
- Input  =	"AND ($4400)"
- Output = 	"AND: error at line 1 - cannot use indirect addressing"
-}
-
 test undefined-error{
  Input  =	"AND name"
  Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "AND Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test zeropagey-denied{
+ Input 	= 	"AND $44,Y"
+ Output = 	"AND: error at line 1 - cannot use ZeroPageY addressing"
+}
+
+test indirect-denied{
+ Input  =	"AND ($4400)"
+ Output = 	"AND: error at line 1 - cannot use indirect addressing"
 }

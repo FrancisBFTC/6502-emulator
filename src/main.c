@@ -1077,7 +1077,8 @@ bool tokenizer(){
     		isMnemonic = true;
 		}
 		
-		if(count_tok > 0){
+		bool isNotAccumulator = strcmp(token, "A") == 0 && (mnemonic_index == 2 || mnemonic_index == 31 || mnemonic_index == 34 || mnemonic_index == 35);
+		if(count_tok > 0 && !isNotAccumulator){
 			isDefinition = check_definition();
 			if(isDefinition == -1)
 				return false;

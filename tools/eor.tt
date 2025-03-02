@@ -117,7 +117,7 @@ test invalid-operand-indirect{
 }
 
 test expected-operand-error{
- Input  =	"ADC"
+ Input  =	"EOR"
  Output = 	"Error: Syntax error at line 1 - Instruction expect 1 operand. Given 0"
 }
 
@@ -151,12 +151,24 @@ test missing-register-error{
  Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
 }
 
-test indirect-address-error{
- Input  =	"EOR ($4400)"
- Output = 	"EOR: error at line 1 - cannot use indirect addressing"
-}
-
 test undefined-error{
  Input  =	"EOR name"
  Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "EOR Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test zeropagey-denied{
+ Input 	= 	"EOR $44,Y"
+ Output = 	"EOR: error at line 1 - cannot use ZeroPageY addressing"
+}
+
+test indirect-denied{
+ Input  =	"EOR ($4400)"
+ Output = 	"EOR: error at line 1 - cannot use indirect addressing"
 }
