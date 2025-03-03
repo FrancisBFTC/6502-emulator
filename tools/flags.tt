@@ -1,0 +1,202 @@
+Message {
+ Name = "FLAGs Instructions for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test clc-instruction{
+ Input 	= 	"CLC"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: 18"
+}
+
+test sec-instruction{
+ Input 	= 	"SEC"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: 38"
+}
+
+test cli-instruction{
+ Input 	= 	"CLI"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: 58"
+}
+
+test sei-instruction{
+ Input 	= 	"SEI"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: 78"
+}
+
+test clv-instruction{
+ Input 	= 	"CLV"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: B8"
+}
+
+test cld-instruction{
+ Input 	= 	"CLD"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: D8"
+}
+
+test sed-instruction{
+ Input 	= 	"SED"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: F8"
+}
+
+Message {
+ Name = "FLAGs Instructions for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test clc-indirect-error{
+ Input  =	"CLC ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test sec-indirect-error{
+ Input  =	"SEC ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test cli-indirect-error{
+ Input  =	"CLI ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test sei-indirect-error{
+ Input  =	"SEI ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test clv-indirect-error{
+ Input  =	"CLV ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test cld-indirect-error{
+ Input  =	"CLD ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test sed-indirect-error{
+ Input  =	"SED ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test clc-zeropage-error{
+ Input  =	"CLC $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test sec-zeropage-error{
+ Input  =	"SEC $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test cli-zeropage-error{
+ Input  =	"CLI $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test sei-zeropage-error{
+ Input  =	"SEI $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test clv-zeropage-error{
+ Input  =	"CLV $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test cld-zeropage-error{
+ Input  =	"CLD $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test sed-zeropage-error{
+ Input  =	"SED $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test clc-immediate-error{
+ Input  =	"CLC #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test sec-immediate-error{
+ Input  =	"SEC #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test cli-immediate-error{
+ Input  =	"CLI #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test sei-immediate-error{
+ Input  =	"SEI #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test clv-immediate-error{
+ Input  =	"CLV #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test cld-immediate-error{
+ Input  =	"CLD #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test sed-immediate-error{
+ Input  =	"SED #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test clc-undefined-error{
+ Input  =	"CLC name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+test sec-undefined-error{
+ Input  =	"SEC name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+test cli-undefined-error{
+ Input  =	"CLI name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+test sei-undefined-error{
+ Input  =	"SEI name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+test clv-undefined-error{
+ Input  =	"CLV name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+test cld-undefined-error{
+ Input  =	"CLD name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+test sed-undefined-error{
+ Input  =	"SED name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
