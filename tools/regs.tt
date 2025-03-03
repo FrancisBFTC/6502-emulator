@@ -1,0 +1,229 @@
+Message {
+ Name = "Registers Instructions for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test TAX-instruction{
+ Input 	= 	"TAX"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: AA"
+}
+
+test TXA-instruction{
+ Input 	= 	"TXA"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: 8A"
+}
+
+test DEX-instruction{
+ Input 	= 	"DEX"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: CA"
+}
+
+test INX-instruction{
+ Input 	= 	"INX"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: E8"
+}
+
+test TAY-instruction{
+ Input 	= 	"TAY"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: A8"
+}
+
+test TYA-instruction{
+ Input 	= 	"TYA"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: 98"
+}
+
+test DEY-instruction{
+ Input 	= 	"DEY"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: 88"
+}
+
+test INY-instruction{
+ Input 	= 	"INY"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: C8"
+}
+
+Message {
+ Name = "Registers Instructions for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test TAX-indirect-error{
+ Input  =	"TAX ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test TXA-indirect-error{
+ Input  =	"TXA ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test DEX-indirect-error{
+ Input  =	"DEX ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test INX-indirect-error{
+ Input  =	"INX ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test TAY-indirect-error{
+ Input  =	"TAY ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test TYA-indirect-error{
+ Input  =	"TYA ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test DEY-indirect-error{
+ Input  =	"DEY ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test INY-indirect-error{
+ Input  =	"INY ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test TAX-zeropage-error{
+ Input  =	"TAX $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test TXA-zeropage-error{
+ Input  =	"TXA $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test DEX-zeropage-error{
+ Input  =	"DEX $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test INX-zeropage-error{
+ Input  =	"INX $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test TAY-zeropage-error{
+ Input  =	"TAY $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test TYA-zeropage-error{
+ Input  =	"TYA $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test DEY-zeropage-error{
+ Input  =	"DEY $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test INY-zeropage-error{
+ Input  =	"INY $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test TAX-immediate-error{
+ Input  =	"TAX #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test TXA-immediate-error{
+ Input  =	"TXA #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test DEX-immediate-error{
+ Input  =	"DEX #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test INX-immediate-error{
+ Input  =	"INX #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test TAY-immediate-error{
+ Input  =	"TAY #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test TYA-immediate-error{
+ Input  =	"TYA #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test DEY-immediate-error{
+ Input  =	"DEY #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test INY-immediate-error{
+ Input  =	"INY #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test TAX-undefined-error{
+ Input  =	"TAX name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+test TXA-undefined-error{
+ Input  =	"TXA name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+test DEX-undefined-error{
+ Input  =	"DEX name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+test INX-undefined-error{
+ Input  =	"INX name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+test TAY-undefined-error{
+ Input  =	"TAY name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+test TYA-undefined-error{
+ Input  =	"TYA name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+test DEY-undefined-error{
+ Input  =	"DEY name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+test INY-undefined-error{
+ Input  =	"INY name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}

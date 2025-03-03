@@ -1,0 +1,164 @@
+Message {
+ Name = "CPY Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate{
+ Input 	= 	"CPY #$44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: C0 44"
+}
+
+test zeropage{
+ Input 	= 	"CPY $44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: C4 44"
+}
+
+test absolute{
+ Input 	= 	"CPY $4400"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: CC 00 44"
+}
+
+Message {
+ Name = "CPY Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-error{
+ Input  =	"CPY #$44,"
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
+}
+
+test indirecty-error{
+ Input  =	"CPY ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test indirectx-error{
+ Input  =	"CPY ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test parenthesis-close-error{
+ Input  =	"CPY ($44"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
+}
+
+
+test parenthesis-open-error{
+ Input  =	"CPY $44)"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
+}
+
+test comma-error-x{
+ Input  =	"CPY ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test comma-error-y{
+ Input  =	"CPY ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test invalid-operand-zeropagex{
+ Input  =	"CPY $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test invalid-operand-indirect{
+ Input  =	"CPY ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test expected-operand-error{
+ Input  =	"BIT"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 1 operand. Given 0"
+}
+
+test immediate-limit-hexa-error{
+ Input  =	"CPY #$440"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test immediate-limit-dec-error{
+ Input  =	"CPY #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test absolute-limit-hexa-error{
+ Input  =	"CPY $44001"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test absolute-limit-dec-error{
+ Input  =	"CPY 65537"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test parse-number-error{
+ Input  =	"CPY $0G"
+ Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
+}
+
+test missing-register-error{
+ Input  =	"CPY $44,"
+ Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
+}
+
+test undefined-error{
+ Input  =	"CPY name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "CPY Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test zeropagex-denied{
+ Input 	= 	"CPY $44,X"
+ Output = 	"CPY: error at line 1 - cannot use ZeroPageX addressing"
+}
+
+test zeropagey-denied{
+ Input 	= 	"CPY $44,Y"
+ Output = 	"CPY: error at line 1 - cannot use ZeroPageY addressing"
+}
+
+test absolutex-denied{
+ Input 	= 	"CPY $4400,X"
+ Output = 	"CPY: error at line 1 - cannot use absoluteX addressing"
+}
+
+test absolutey-denied{
+ Input 	= 	"CPY $4400,Y"
+ Output = 	"CPY: error at line 1 - cannot use absoluteY addressing"
+}
+
+test indirect-address-error{
+ Input  =	"CPY ($4400)"
+ Output = 	"CPY: error at line 1 - cannot use indirect addressing"
+}
+
+test indirectx-denied{
+ Input 	= 	"CPY ($44,X)"
+ Output = 	"CPY: error at line 1 - cannot use indirectX addressing"
+}
+
+test indirecty-denied{
+ Input 	= 	"CPY ($44),Y"
+ Output = 	"CPY: error at line 1 - cannot use indirectY addressing"
+}

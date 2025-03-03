@@ -1,0 +1,175 @@
+Message {
+ Name = "ASL Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test accumulator-1{
+ Input 	= 	"ASL A"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: 0A"
+}
+
+test accumulator-2{
+ Input 	= 	"ASL"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: 0A"
+}
+
+test zeropage{
+ Input 	= 	"ASL $44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 06 44"
+}
+
+test zeropagex{
+ Input 	= 	"ASL $44,X"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 16 44"
+}
+
+test absolute{
+ Input 	= 	"ASL $4400"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 0E 00 44"
+}
+
+test absolutex{
+ Input 	= 	"ASL $4400,X"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 1E 00 44"
+}
+
+Message {
+ Name = "ASL Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-error{
+ Input  =	"ASL #$44,"
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
+}
+
+test indirecty-error{
+ Input  =	"ASL ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test indirectx-error{
+ Input  =	"ASL ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test parenthesis-close-error{
+ Input  =	"ASL ($44"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
+}
+
+
+test parenthesis-open-error{
+ Input  =	"ASL $44)"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
+}
+
+test comma-error-x{
+ Input  =	"ASL ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test comma-error-y{
+ Input  =	"ASL ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test invalid-operand-zeropagex{
+ Input  =	"ASL $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test invalid-operand-indirect{
+ Input  =	"ASL ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test immediate-limit-hexa-error{
+ Input  =	"ASL #$440"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test immediate-limit-dec-error{
+ Input  =	"ASL #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test absolute-limit-hexa-error{
+ Input  =	"ASL $44001"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test absolute-limit-dec-error{
+ Input  =	"ASL 65537"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test parse-number-error{
+ Input  =	"ASL $0G"
+ Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
+}
+
+test missing-register-error{
+ Input  =	"ASL $44,"
+ Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
+}
+
+test undefined-error{
+ Input  =	"ASL name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "ASL Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test zeropagey-denied{
+ Input 	= 	"ASL $44,Y"
+ Output = 	"ASL: error at line 1 - cannot use ZeroPageY addressing"
+}
+
+test absolutey-denied{
+ Input 	= 	"ASL $4400,Y"
+ Output = 	"ASL: error at line 1 - cannot use absoluteY addressing"
+}
+
+test immediate-denied{
+ Input  =	"ASL #$44"
+ Output = 	"ASL: error at line 1 - cannot use immediate addressing"
+}
+
+test indirect-denied{
+ Input  =	"ASL ($4400)"
+ Output = 	"ASL: error at line 1 - cannot use indirect addressing"
+}
+
+test indirectx-denied{
+ Input 	= 	"ASL ($44,X)"
+ Output = 	"ASL: error at line 1 - cannot use indirectX addressing"
+}
+
+test indirecty-denied{
+ Input 	= 	"ASL ($44),Y"
+ Output = 	"ASL: error at line 1 - cannot use indirectY addressing"
+}

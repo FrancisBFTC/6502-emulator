@@ -229,7 +229,7 @@ int* process[] = {
 };
 
 void printerr(const char* msg){
-	printf("Error: Syntax error at line %d - %s.\n", linenum, msg);
+	printf("Error: Syntax error at line %d - %s\n", linenum, msg);
 }
 
 void printwarn(const char* msg){
@@ -237,7 +237,7 @@ void printwarn(const char* msg){
 }
 
 void error(const char* msg){
-	printf("%s: error at line %d - %s.\n", mnemonic, linenum, msg);
+	printf("%s: error at line %d - %s\n", mnemonic, linenum, msg);
 }
 
 void format_line(){
@@ -380,13 +380,13 @@ void proc_define(){
 	
 	DefineList* def = getdef(define_list, name);
 	if(def != NULL){
-		printf("Error: This name '%s' at line %d is already defined at line %d.\n", def->name, linenum, def->line);
+		printf("Error: This name '%s' at line %d is already defined at line %d.", def->name, linenum, def->line);
 		directive_error = true;
 		return;
 	}else{
 		LabelList* lab = getLabelByName(label_list, name);
 		if(lab != NULL){
-			printf("Error: This label '%s' at line %d is already defined at line %d.\n", lab->name, linenum, lab->line);
+			printf("Error: This label '%s' at line %d is already defined at line %d.", lab->name, linenum, lab->line);
 			directive_error = true;
 			return;
 		}
@@ -479,7 +479,7 @@ int replace_name(char* name){
 			value = str;
 				
 		}else{
-			printerr("Undefined value");
+			printerr("undefined value");
 			return -1;	
 		}
 	}else{
@@ -505,6 +505,14 @@ int check_definition(){
 		name[namelen-1] = '\0';
 		namelen -= 1;
 	}
+
+	int namex = strcspn(&token[index], ")X");
+	int namey = strcspn(&token[index], ")Y");
+	if((name[namex+1] == 'X' || name[namey+1] == 'Y') && (name[namex] == ')' || name[namey] == ')'))
+		return 0;
+	if(name[0] >= 0x30 && name[0] <= 0x39)
+		return 0;
+		
 	name[namelen] = 0;
 	strtol(&name[0], &endptr, 10);
 	if(*endptr != '\0'){
@@ -574,11 +582,11 @@ bool get_label(int length){
 					label_list = insertlab(label_list, linenum, label, 0x0000);
 					label_list->refs = NULL;
 				}else{
-					printf("Error: This label '%s' at line %d is already defined at line %d.\n", lab->name, linenum, lab->line);
+					printf("Error: This label '%s' at line %d is already defined at line %d.", lab->name, linenum, lab->line);
 					return false;
 				}
 			}else{
-				printf("Error: This name '%s' at line %d is already defined at line %d.\n", def->name, linenum, def->line);
+				printf("Error: This name '%s' at line %d is already defined at line %d.", def->name, linenum, def->line);
 				return false;
 			}
 							
@@ -677,7 +685,7 @@ void assembler(const char *filename) {
 		
 	memory = (unsigned char *) malloc(MEMORY_EMULATOR * sizeof(unsigned char));
 	if (memory == NULL) {
-        printf("Erro ao alocar memória.\n");
+        printf("Erro ao alocar memória.");
         return;
     }
     
@@ -977,24 +985,31 @@ bool parse_addressing(int index){
 							printerr("Invalid indirect addressing");
 							return false;
 						}
-						
 						break;
 					}
 					if(operand[i] == ')' && isIndirect)
 						isParenthesisValid = true;
+				}//else{
+					
+				if(!isIndirect && (!isZeroPageX && !isZeroPageY && !isAbsoluteX && !isAbsoluteY)){
+					printerr("Invalid addressing - Missing register");
+					return false;
 				}
+					//break;	
+				//}
+					
 				if(i == operand_len)	break;
 
 				if(operand[i+1] == ')'){
 					if(operand[i+2] != NULL && operand[i+2] != ';'){
 						printerr("Invalid operand");
-						printf("char error -> %c\n", operand[i+2]);
+						printf("char error -> %c ", operand[i+2]);
 						return false;
 					}	
 				}else{
 					if(operand[i+1] != NULL && operand[i+1] != ';' && operand[i] != ';'){
 						printerr("Invalid operand");
-						printf("char error -> %c\n", operand[i+1]);
+						printf("char error -> %c ", operand[i+1]);
 						return false;
 					}
 				}
@@ -1003,10 +1018,7 @@ bool parse_addressing(int index){
 					printerr("Missing parenthesis open");
 					return false;
 				}
-				if(!isIndirect && (!isZeroPageX && !isZeroPageY && !isAbsoluteX && !isAbsoluteY)){
-					printerr("Invalid addressing - Missing register");
-					return false;
-				}
+				
 				bool noJump = (mnemonic_index != 26 && mnemonic_index != 27);
 				if(!indirectY && !indirectX && isIndirect && noJump){
 					printerr("Invalid indirect addressing");
@@ -1065,7 +1077,8 @@ bool tokenizer(){
     		isMnemonic = true;
 		}
 		
-		if(count_tok > 0){
+		bool isNotAccumulator = strcmp(token, "A") == 0 && (mnemonic_index == 2 || mnemonic_index == 31 || mnemonic_index == 34 || mnemonic_index == 35);
+		if(count_tok > 0 && !isNotAccumulator){
 			isDefinition = check_definition();
 			if(isDefinition == -1)
 				return false;

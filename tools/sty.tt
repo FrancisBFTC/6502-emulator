@@ -1,0 +1,164 @@
+Message {
+ Name = "STY Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test zeropage{
+ Input 	= 	"STY $44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 84 44"
+}
+
+test zeropagex{
+ Input 	= 	"STY $44,X"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 94 44"
+}
+
+test absolute{
+ Input 	= 	"STY $4400"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 8C 00 44"
+}
+
+Message {
+ Name = "STY Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-error{
+ Input  =	"STY #$44,"
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
+}
+
+test indirecty-error{
+ Input  =	"STY ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test indirectx-error{
+ Input  =	"STY ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test parenthesis-close-error{
+ Input  =	"STY ($44"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
+}
+
+
+test parenthesis-open-error{
+ Input  =	"STY $44)"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
+}
+
+test comma-error-x{
+ Input  =	"STY ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test comma-error-y{
+ Input  =	"STY ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test invalid-operand-zeropagex{
+ Input  =	"STY $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test invalid-operand-indirect{
+ Input  =	"STY ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test expected-operand-error{
+ Input  =	"STY"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 1 operand. Given 0"
+}
+
+test immediate-limit-hexa-error{
+ Input  =	"STY #$440"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test immediate-limit-dec-error{
+ Input  =	"STY #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test absolute-limit-hexa-error{
+ Input  =	"STY $44001"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test absolute-limit-dec-error{
+ Input  =	"STY 65537"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test parse-number-error{
+ Input  =	"STY $0G"
+ Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
+}
+
+test missing-register-error{
+ Input  =	"STY $44,"
+ Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
+}
+
+test undefined-error{
+ Input  =	"STY name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "STY Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-denied{
+ Input  =	"STY #$44"
+ Output = 	"STY: error at line 1 - cannot use immediate addressing"
+}
+
+test indirect-denied{
+ Input  =	"STY ($4400)"
+ Output = 	"STY: error at line 1 - cannot use indirect addressing"
+}
+
+test indirectx-denied{
+ Input 	= 	"STY ($44,X)"
+ Output = 	"STY: error at line 1 - cannot use indirectX addressing"
+}
+
+test indirecty-denied{
+ Input 	= 	"STY ($44),Y"
+ Output = 	"STY: error at line 1 - cannot use indirectY addressing"
+}
+
+test absolutex-denied{
+ Input 	= 	"STY $4400,X"
+ Output = 	"STY: error at line 1 - cannot use absoluteX addressing"
+}
+
+test absolutex-denied{
+ Input 	= 	"STY $4400,Y"
+ Output = 	"STY: error at line 1 - cannot use absoluteY addressing"
+}
+
+test zeropagey-denied{
+ Input 	= 	"STY $44,Y"
+ Output = 	"STY: error at line 1 - cannot use ZeroPageY addressing"
+}

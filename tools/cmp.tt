@@ -1,0 +1,174 @@
+Message {
+ Name = "CMP Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate{
+ Input  =	"CMP #$44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: C9 44"
+}
+
+test zeropage{
+ Input 	= 	"CMP $44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: C5 44"
+}
+
+test zeropagex{
+ Input 	= 	"CMP $44,X"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: D5 44"
+}
+
+test absolute{
+ Input 	= 	"CMP $4400"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: CD 00 44"
+}
+
+test absolutex{
+ Input 	= 	"CMP $4400,X"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: DD 00 44"
+}
+
+test absolutey{
+ Input 	= 	"CMP $4400,Y"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: D9 00 44"
+}
+
+test indirectx{
+ Input 	= 	"CMP ($44,X)"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: C1 44"
+}
+
+test indirecty{
+ Input 	= 	"CMP ($44),Y"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: D1 44"
+}
+
+Message {
+ Name = "CMP Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-error{
+ Input  =	"CMP #$44,"
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
+}
+
+test indirecty-error{
+ Input  =	"CMP ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test indirectx-error{
+ Input  =	"CMP ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test parenthesis-close-error{
+ Input  =	"CMP ($44"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
+}
+
+
+test parenthesis-open-error{
+ Input  =	"CMP $44)"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
+}
+
+test comma-error-x{
+ Input  =	"CMP ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test comma-error-y{
+ Input  =	"CMP ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test invalid-operand-zeropagex{
+ Input  =	"CMP $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test invalid-operand-indirect{
+ Input  =	"CMP ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test expected-operand-error{
+ Input  =	"CMP"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 1 operand. Given 0"
+}
+
+test immediate-limit-hexa-error{
+ Input  =	"CMP #$440"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test immediate-limit-dec-error{
+ Input  =	"CMP #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test absolute-limit-hexa-error{
+ Input  =	"CMP $44001"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test absolute-limit-dec-error{
+ Input  =	"CMP 65537"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test parse-number-error{
+ Input  =	"CMP $0G"
+ Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
+}
+
+test missing-register-error{
+ Input  =	"CMP $44,"
+ Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
+}
+
+test undefined-error{
+ Input  =	"CMP name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "CMP Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test zeropagey-denied{
+ Input 	= 	"CMP $44,Y"
+ Output = 	"CMP: error at line 1 - cannot use ZeroPageY addressing"
+}
+
+test indirect-denied{
+ Input  =	"CMP ($4400)"
+ Output = 	"CMP: error at line 1 - cannot use indirect addressing"
+}

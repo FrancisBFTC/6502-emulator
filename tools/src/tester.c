@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <windows.h>
+#include <sys/stat.h>
 
 #define MAX_LINE_LENGTH 1024
 
@@ -83,9 +84,16 @@ char* read_file(const char* filename){
 		return;
 	}
 	
-	fseek(file, 0, SEEK_END);
-	long size = ftell(file);
-	fseek(file, 0, SEEK_SET);
+	//fseek(file, 0, SEEK_END);
+	//long size = ftell(file);
+	//fseek(file, 0, SEEK_SET);
+	struct stat st;
+	if(fstat(fileno(file), &st) != 0){
+		perror("Erro ao obter informações do arquivo.");
+		fclose(file);
+		return NULL;
+	}
+	long size = st.st_size;
 	
 	char* datas = (char*) malloc(size + 1);
 	if(datas == NULL){
@@ -95,22 +103,12 @@ char* read_file(const char* filename){
 	}
 	
 	fread(datas, 1, size, file);
-	datas[size] = '\0';
+	datas[size-2] = '\0';
 	fclose(file);
 	
 	return datas;
 }
 
-/*
-char* testname = NULL;
-char* input = NULL;
-char* output = NULL;
-char* setup = NULL;
-char* success_test = NULL;
-char* error_test = NULL;
-char* setup_test = NULL;
-char* name = NULL;
-*/
 void reset_all(){
 	if(name != NULL)
 		free(name);
@@ -345,9 +343,8 @@ bool tester(const char* filename, bool verbose, int* scount, int* fcount, int* t
 						}else{
 							system(setup);
 						}
-		
 						char* content = read_file("output.dat");
-						
+							
 						if(strcmp(content, output) == 0){
 							success_count++;
 							change_color(10, 0);
@@ -362,7 +359,20 @@ bool tester(const char* filename, bool verbose, int* scount, int* fcount, int* t
 								printf(" %s\n", error_test);
 							else
 								printf(" %s\n", error);
+								
+							//printf("expect: \n");
+							//for(int i = 0; i < strlen(output); i++)
+							//	printf("%X ", output[i]);
+							//printf("content: \n");
+							//for(int i = 0; i < strlen(content); i++)
+							//	printf("%X ", content[i]);
+							
+							//printf("expect: \n%s\n", output);
+							//printf("content: \n%x\n", content);
 						}
+						//system("del input.dat");
+						//system("del output.dat");
+						free(content);
 						
 						if(verbose){
 							change_color(14, 0);
@@ -620,10 +630,31 @@ void show_info(int total, int passed, int fails){
 	printf("failed.\n");
 	change_color(7, 0);
 }
+
+void show_total(int total, int fails, int files){
+	change_color(11, 0);
+	printf("\nREPORT:\n");
+	change_color(10, 0);
+	printf("\tTESTS = ");
+	change_color(13, 0);
+	printf("%d", total);
+	change_color(10, 0);
+	printf(", ERRORS = ");
+	change_color(13, 0);
+	printf("%d", fails);
+	change_color(10, 0);
+	printf(", FILES = ");
+	change_color(13, 0);
+	printf("%d", files);
+	change_color(7, 0);
+}
+
 int main(int argc, char *argv[]) {
 	int passed = 0;
 	int fails = 0;
 	int total = 0;
+	int tests_total = 0;
+	int fails_total = 0;
 	bool interpreted = true;
 	bool isVerbose = strcmp(argv[argc-1], "-v") == 0 || strcmp(argv[argc-1], "--verbose") == 0;
 	if(argv[1] == NULL){
@@ -632,17 +663,27 @@ int main(int argc, char *argv[]) {
 	}
 	
 	int quant = (isVerbose) ? argc - 1 : argc;
+	int files_total = argc - 1;
 	
 	for(int i = 1; i < quant; i++){
 		interpreted = (isVerbose) 	? tester(argv[i], true, &passed, &fails, &total)
 									: tester(argv[i], false, &passed, &fails, &total);
 		if(interpreted)
 			show_info(total, passed, fails);
-			
+		else
+			return -1;
+				
+		tests_total += total;
+		fails_total += fails;
+		
 		total = 0;
 		fails = 0;
 		passed = 0;
 	}
+	
+	if(argc > 2)
+		show_total(tests_total, fails_total, files_total);
+		
 	
 	return 0;
 }

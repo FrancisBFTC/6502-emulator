@@ -1,0 +1,161 @@
+Message {
+ Name = "INC Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test zeropage{
+ Input 	= 	"INC $44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: E6 44"
+}
+
+test zeropagex{
+ Input 	= 	"INC $44,X"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: F6 44"
+}
+
+test absolute{
+ Input 	= 	"INC $4400"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: EE 00 44"
+}
+
+test absolutex{
+ Input 	= 	"INC $4400,X"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: FE 00 44"
+}
+
+Message {
+ Name = "INC Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-error{
+ Input  =	"INC #$44,"
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
+}
+
+test indirecty-error{
+ Input  =	"INC ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test indirectx-error{
+ Input  =	"INC ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test parenthesis-close-error{
+ Input  =	"INC ($44"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
+}
+
+
+test parenthesis-open-error{
+ Input  =	"INC $44)"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
+}
+
+test comma-error-x{
+ Input  =	"INC ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test comma-error-y{
+ Input  =	"INC ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test invalid-operand-zeropagex{
+ Input  =	"INC $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test invalid-operand-indirect{
+ Input  =	"INC ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test immediate-limit-hexa-error{
+ Input  =	"INC #$440"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test immediate-limit-INC-error{
+ Input  =	"INC #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test absolute-limit-hexa-error{
+ Input  =	"INC $44001"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test absolute-limit-INC-error{
+ Input  =	"INC 65537"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test parse-number-error{
+ Input  =	"INC $0G"
+ Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
+}
+
+test missing-register-error{
+ Input  =	"INC $44,"
+ Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
+}
+
+test undefined-error{
+ Input  =	"INC name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "INC Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-denied{
+ Input  =	"INC #$44"
+ Output = 	"INC: error at line 1 - cannot use immediate addressing"
+}
+
+test zeropagey-denied{
+ Input 	= 	"INC $44,Y"
+ Output = 	"INC: error at line 1 - cannot use ZeroPageY addressing"
+}
+
+test absolutey-denied{
+ Input 	= 	"INC $4400,Y"
+ Output = 	"INC: error at line 1 - cannot use absoluteY addressing"
+}
+
+test indirect-denied{
+ Input  =	"INC ($4400)"
+ Output = 	"INC: error at line 1 - cannot use indirect addressing"
+}
+
+test indirectx-denied{
+ Input 	= 	"INC ($44,X)"
+ Output = 	"INC: error at line 1 - cannot use indirectX addressing"
+}
+
+test indirecty-denied{
+ Input 	= 	"INC ($44),Y"
+ Output = 	"INC: error at line 1 - cannot use indirectY addressing"
+}

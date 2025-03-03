@@ -1,0 +1,175 @@
+Message {
+ Name = "LSR Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test accumulator-1{
+ Input 	= 	"LSR A"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: 4A"
+}
+
+test accumulator-2{
+ Input 	= 	"LSR"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: 4A"
+}
+
+test zeropage{
+ Input 	= 	"LSR $44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 46 44"
+}
+
+test zeropagex{
+ Input 	= 	"LSR $44,X"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 56 44"
+}
+
+test absolute{
+ Input 	= 	"LSR $4400"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 4E 00 44"
+}
+
+test absolutex{
+ Input 	= 	"LSR $4400,X"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 5E 00 44"
+}
+
+Message {
+ Name = "LSR Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-error{
+ Input  =	"LSR #$44,"
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
+}
+
+test indirecty-error{
+ Input  =	"LSR ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test indirectx-error{
+ Input  =	"LSR ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test parenthesis-close-error{
+ Input  =	"LSR ($44"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
+}
+
+
+test parenthesis-open-error{
+ Input  =	"LSR $44)"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
+}
+
+test comma-error-x{
+ Input  =	"LSR ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test comma-error-y{
+ Input  =	"LSR ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test invalid-operand-zeropagex{
+ Input  =	"LSR $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test invalid-operand-indirect{
+ Input  =	"LSR ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test immediate-limit-hexa-error{
+ Input  =	"LSR #$440"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test immediate-limit-dec-error{
+ Input  =	"LSR #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test absolute-limit-hexa-error{
+ Input  =	"LSR $44001"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test absolute-limit-dec-error{
+ Input  =	"LSR 65537"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test parse-number-error{
+ Input  =	"LSR $0G"
+ Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
+}
+
+test missing-register-error{
+ Input  =	"LSR $44,"
+ Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
+}
+
+test undefined-error{
+ Input  =	"LSR name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "LSR Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test zeropagey-denied{
+ Input 	= 	"LSR $44,Y"
+ Output = 	"LSR: error at line 1 - cannot use ZeroPageY addressing"
+}
+
+test absolutey-denied{
+ Input 	= 	"LSR $4400,Y"
+ Output = 	"LSR: error at line 1 - cannot use absoluteY addressing"
+}
+
+test immediate-denied{
+ Input  =	"LSR #$44"
+ Output = 	"LSR: error at line 1 - cannot use immediate addressing"
+}
+
+test indirect-denied{
+ Input  =	"LSR ($4400)"
+ Output = 	"LSR: error at line 1 - cannot use indirect addressing"
+}
+
+test indirectx-denied{
+ Input 	= 	"LSR ($44,X)"
+ Output = 	"LSR: error at line 1 - cannot use indirectX addressing"
+}
+
+test indirecty-denied{
+ Input 	= 	"LSR ($44),Y"
+ Output = 	"LSR: error at line 1 - cannot use indirectY addressing"
+}

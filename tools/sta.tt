@@ -1,0 +1,172 @@
+Message {
+ Name = "STA Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test zeropage{
+ Input 	= 	"STA $44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 85 44"
+}
+
+test zeropagex{
+ Input 	= 	"STA $44,X"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 95 44"
+}
+
+test absolute{
+ Input 	= 	"STA $4400"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 8D 00 44"
+}
+
+test absolutex{
+ Input 	= 	"STA $4400,X"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 9D 00 44"
+}
+
+test absolutey{
+ Input 	= 	"STA $4400,Y"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 99 00 44"
+}
+
+test indirectx{
+ Input 	= 	"STA ($44,X)"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 81 44"
+}
+
+test indirecty{
+ Input 	= 	"STA ($44),Y"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 91 44"
+}
+
+Message {
+ Name = "STA Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-error{
+ Input  =	"STA #$44,"
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
+}
+
+test indirecty-error{
+ Input  =	"STA ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test indirectx-error{
+ Input  =	"STA ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test parenthesis-close-error{
+ Input  =	"STA ($44"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
+}
+
+
+test parenthesis-open-error{
+ Input  =	"STA $44)"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
+}
+
+test comma-error-x{
+ Input  =	"STA ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test comma-error-y{
+ Input  =	"STA ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test invalid-operand-zeropagex{
+ Input  =	"STA $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test invalid-operand-indirect{
+ Input  =	"STA ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test expected-operand-error{
+ Input  =	"STA"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 1 operand. Given 0"
+}
+
+test immediate-limit-hexa-error{
+ Input  =	"STA #$440"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test immediate-limit-dec-error{
+ Input  =	"STA #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test absolute-limit-hexa-error{
+ Input  =	"STA $44001"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test absolute-limit-dec-error{
+ Input  =	"STA 65537"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test parse-number-error{
+ Input  =	"STA $0G"
+ Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
+}
+
+test missing-register-error{
+ Input  =	"STA $44,"
+ Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
+}
+
+test undefined-error{
+ Input  =	"STA name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "STA Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-denied{
+ Input  =	"STA #$44"
+ Output = 	"STA: error at line 1 - cannot use immediate addressing"
+}
+
+test zeropagey-denied{
+ Input 	= 	"STA $44,Y"
+ Output = 	"STA: error at line 1 - cannot use ZeroPageY addressing"
+}
+
+test indirect-denied{
+ Input  =	"STA ($4400)"
+ Output = 	"STA: error at line 1 - cannot use indirect addressing"
+}

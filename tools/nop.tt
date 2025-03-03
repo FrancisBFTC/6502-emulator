@@ -1,0 +1,158 @@
+Message {
+ Name = "NOP Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test implied{
+ Input 	= 	"NOP"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: EA"
+}
+
+Message {
+ Name = "NOP Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test indirecty-error-nop{
+ Input  =	"NOP ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test indirectx-error-nop{
+ Input  =	"NOP ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test parenthesis-close-error-nop{
+ Input  =	"NOP ($44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+
+test parenthesis-open-error-nop{
+ Input  =	"NOP $44)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test comma-error-x-nop{
+ Input  =	"NOP ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test comma-error-y-nop{
+ Input  =	"NOP ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test invalid-operand-zeropagex-nop{
+ Input  =	"NOP $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test invalid-operand-indirect-nop{
+ Input  =	"NOP ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test immediate-limit-hexa-error-nop{
+ Input  =	"NOP #$440"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test immediate-limit-dec-error-nop{
+ Input  =	"NOP #256"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test absolute-limit-hexa-error-nop{
+ Input  =	"NOP $44001"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test absolute-limit-dec-error-nop{
+ Input  =	"NOP 65537"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test parse-number-error-nop{
+ Input  =	"NOP $0G"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test missing-register-error-nop{
+ Input  =	"NOP $44,"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test undefined-error-nop{
+ Input  =	"NOP name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "NOP Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-denied-nop{
+ Input  =	"NOP #$44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test zeropage-denied-nop{
+ Input 	= 	"NOP $44"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test zeropagey-denied-nop{
+ Input 	= 	"NOP $44,Y"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test zeropagex-denied-nop{
+ Input 	= 	"NOP $44,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test absolute-denied-nop{
+ Input 	= 	"NOP $4400"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test absolutex-denied-nop{
+ Input 	= 	"NOP $4400,X"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test absolutex-denied-nop{
+ Input 	= 	"NOP $4400,Y"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test indirect-denied-nop{
+ Input  =	"NOP ($4400)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test indirectx-denied-nop{
+ Input 	= 	"NOP ($44,X)"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test indirecty-denied-nop{
+ Input 	= 	"NOP ($44),Y"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}
+
+test immediate-error-nop{
+ Input  =	"NOP #$44,"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1"
+}

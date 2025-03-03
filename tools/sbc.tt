@@ -1,0 +1,174 @@
+Message {
+ Name = "SBC Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate{
+ Input  =	"SBC #$44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: E9 44"
+}
+
+test zeropage{
+ Input 	= 	"SBC $44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: E5 44"
+}
+
+test zeropagex{
+ Input 	= 	"SBC $44,X"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: F5 44"
+}
+
+test absolute{
+ Input 	= 	"SBC $4400"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: ED 00 44"
+}
+
+test absolutex{
+ Input 	= 	"SBC $4400,X"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: FD 00 44"
+}
+
+test absolutey{
+ Input 	= 	"SBC $4400,Y"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: F9 00 44"
+}
+
+test indirectx{
+ Input 	= 	"SBC ($44,X)"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: E1 44"
+}
+
+test indirecty{
+ Input 	= 	"SBC ($44),Y"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: F1 44"
+}
+
+Message {
+ Name = "SBC Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-error{
+ Input  =	"SBC #$44,"
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
+}
+
+test indirecty-error{
+ Input  =	"SBC ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test indirectx-error{
+ Input  =	"SBC ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test parenthesis-close-error{
+ Input  =	"SBC ($44"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
+}
+
+
+test parenthesis-open-error{
+ Input  =	"SBC $44)"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
+}
+
+test comma-error-x{
+ Input  =	"SBC ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test comma-error-y{
+ Input  =	"SBC ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test invalid-operand-zeropagex{
+ Input  =	"SBC $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test invalid-operand-indirect{
+ Input  =	"SBC ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test expected-operand-error{
+ Input  =	"SBC"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 1 operand. Given 0"
+}
+
+test immediate-limit-hexa-error{
+ Input  =	"SBC #$440"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test immediate-limit-dec-error{
+ Input  =	"SBC #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test absolute-limit-hexa-error{
+ Input  =	"SBC $44001"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test absolute-limit-dec-error{
+ Input  =	"SBC 65537"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test parse-number-error{
+ Input  =	"SBC $0G"
+ Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
+}
+
+test missing-register-error{
+ Input  =	"SBC $44,"
+ Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
+}
+
+test undefined-error{
+ Input  =	"SBC name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "SBC Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test zeropagey-denied{
+ Input 	= 	"SBC $44,Y"
+ Output = 	"SBC: error at line 1 - cannot use ZeroPageY addressing"
+}
+
+test indirect-denied{
+ Input  =	"SBC ($4400)"
+ Output = 	"SBC: error at line 1 - cannot use indirect addressing"
+}

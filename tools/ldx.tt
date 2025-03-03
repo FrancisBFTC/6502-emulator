@@ -1,0 +1,168 @@
+Message {
+ Name = "LDX Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate{
+ Input 	= 	"LDX #$44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: A2 44"
+}
+
+test zeropage{
+ Input 	= 	"LDX $44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: A6 44"
+}
+
+test zeropagey{
+ Input 	= 	"LDX $44,Y"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: B6 44"
+}
+
+test absolute{
+ Input 	= 	"LDX $4400"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: AE 00 44"
+}
+
+test absolutey{
+ Input 	= 	"LDX $4400,Y"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: BE 00 44"
+}
+
+Message {
+ Name = "LDX Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-error{
+ Input  =	"LDX #$44,"
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
+}
+
+test indirecty-error{
+ Input  =	"LDX ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test indirectx-error{
+ Input  =	"LDX ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test parenthesis-close-error{
+ Input  =	"LDX ($44"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
+}
+
+
+test parenthesis-open-error{
+ Input  =	"LDX $44)"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
+}
+
+test comma-error-x{
+ Input  =	"LDX ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test comma-error-y{
+ Input  =	"LDX ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test invalid-operand-zeropagex{
+ Input  =	"LDX $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test invalid-operand-indirect{
+ Input  =	"LDX ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test expected-operand-error{
+ Input  =	"LDX"
+ Output = 	"Error: Syntax error at line 1 - Instruction expect 1 operand. Given 0"
+}
+
+test immediate-limit-hexa-error{
+ Input  =	"LDX #$440"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test immediate-limit-dec-error{
+ Input  =	"LDX #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test absolute-limit-hexa-error{
+ Input  =	"LDX $44001"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test absolute-limit-dec-error{
+ Input  =	"LDX 65537"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test parse-number-error{
+ Input  =	"LDX $0G"
+ Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
+}
+
+test missing-register-error{
+ Input  =	"LDX $44,"
+ Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
+}
+
+test undefined-error{
+ Input  =	"LDX name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "LDX Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test indirect-address-error{
+ Input  =	"LDX ($4400)"
+ Output = 	"LDX: error at line 1 - cannot use indirect addressing"
+}
+
+test indirectx-denied{
+ Input 	= 	"LDX ($44,X)"
+ Output = 	"LDX: error at line 1 - cannot use indirectX addressing"
+}
+
+test indirecty-denied{
+ Input 	= 	"LDX ($44),Y"
+ Output = 	"LDX: error at line 1 - cannot use indirectY addressing"
+}
+
+test zeropagex-denied{
+ Input 	= 	"LDX $44,X"
+ Output = 	"LDX: error at line 1 - cannot use ZeroPageX addressing"
+}
+
+test absolutex-denied{
+ Input 	= 	"LDX $4400,X"
+ Output = 	"LDX: error at line 1 - cannot use absoluteX addressing"
+}
