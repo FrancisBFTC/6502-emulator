@@ -1,1 +1,3 @@
-tester adc.tt and.tt cmp.tt eor.tt lda.tt ora.tt asl.tt bit.tt cpx.tt cpy.tt
+echo OFF
+tester adc.tt and.tt asl.tt bit.tt cmp.tt cpx.tt cpy.tt dec.tt eor.tt inc.tt lda.tt ldx.tt ldy.tt lsr.tt ora.tt rol.tt ror.tt sbc.tt sta.tt stx.tt sty.tt brk.tt nop.tt
+echo ON

@@ -630,10 +630,31 @@ void show_info(int total, int passed, int fails){
 	printf("failed.\n");
 	change_color(7, 0);
 }
+
+void show_total(int total, int fails, int files){
+	change_color(11, 0);
+	printf("\nREPORT:\n");
+	change_color(10, 0);
+	printf("\tTESTS = ");
+	change_color(13, 0);
+	printf("%d", total);
+	change_color(10, 0);
+	printf(", ERRORS = ");
+	change_color(13, 0);
+	printf("%d", fails);
+	change_color(10, 0);
+	printf(", FILES = ");
+	change_color(13, 0);
+	printf("%d", files);
+	change_color(7, 0);
+}
+
 int main(int argc, char *argv[]) {
 	int passed = 0;
 	int fails = 0;
 	int total = 0;
+	int tests_total = 0;
+	int fails_total = 0;
 	bool interpreted = true;
 	bool isVerbose = strcmp(argv[argc-1], "-v") == 0 || strcmp(argv[argc-1], "--verbose") == 0;
 	if(argv[1] == NULL){
@@ -642,17 +663,27 @@ int main(int argc, char *argv[]) {
 	}
 	
 	int quant = (isVerbose) ? argc - 1 : argc;
+	int files_total = argc - 1;
 	
 	for(int i = 1; i < quant; i++){
 		interpreted = (isVerbose) 	? tester(argv[i], true, &passed, &fails, &total)
 									: tester(argv[i], false, &passed, &fails, &total);
 		if(interpreted)
 			show_info(total, passed, fails);
-			
+		else
+			return -1;
+				
+		tests_total += total;
+		fails_total += fails;
+		
 		total = 0;
 		fails = 0;
 		passed = 0;
 	}
+	
+	if(argc > 2)
+		show_total(tests_total, fails_total, files_total);
+		
 	
 	return 0;
 }

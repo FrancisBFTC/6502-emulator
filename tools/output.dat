@@ -1,1 +1,1 @@
-CPY: error at line 1 - cannot use indirectY addressing
+Error: Syntax error at line 1 - Instruction expect 0 operand. Given 1

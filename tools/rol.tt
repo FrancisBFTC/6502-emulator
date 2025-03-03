@@ -1,0 +1,175 @@
+Message {
+ Name = "ROL Instruction for Machine Code"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test accumulator-1{
+ Input 	= 	"ROL A"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: 2A"
+}
+
+test accumulator-2{
+ Input 	= 	"ROL"
+ Output = 	"Code Length: 1" &
+			"" &
+			"0x600: 2A"
+}
+
+test zeropage{
+ Input 	= 	"ROL $44"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 26 44"
+}
+
+test zeropagex{
+ Input 	= 	"ROL $44,X"
+ Output = 	"Code Length: 2" &
+			"" &
+			"0x600: 36 44"
+}
+
+test absolute{
+ Input 	= 	"ROL $4400"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 2E 00 44"
+}
+
+test absolutex{
+ Input 	= 	"ROL $4400,X"
+ Output = 	"Code Length: 3" &
+			"" &
+			"0x600: 3E 00 44"
+}
+
+Message {
+ Name = "ROL Instruction for Syntax Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test immediate-error{
+ Input  =	"ROL #$44,"
+ Output = 	"Error: Syntax error at line 1 - Incorrect immediate addressing"
+}
+
+test indirecty-error{
+ Input  =	"ROL ($44,Y)"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test indirectx-error{
+ Input  =	"ROL ($44),X"
+ Output = 	"Error: Syntax error at line 1 - Invalid indirect addressing"
+}
+
+test parenthesis-close-error{
+ Input  =	"ROL ($44"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis closed"
+}
+
+
+test parenthesis-open-error{
+ Input  =	"ROL $44)"
+ Output = 	"Error: Syntax error at line 1 - Missing parenthesis open"
+}
+
+test comma-error-x{
+ Input  =	"ROL ($44)X"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test comma-error-y{
+ Input  =	"ROL ($44)Y"
+ Output = 	"Error: Syntax error at line 1 - Missing comma separator"
+}
+
+test invalid-operand-zeropagex{
+ Input  =	"ROL $44,X3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test invalid-operand-indirect{
+ Input  =	"ROL ($44),Y3"
+ Output = 	"Error: Syntax error at line 1 - Invalid operand" &
+            "char error -> 3"
+}
+
+test immediate-limit-hexa-error{
+ Input  =	"ROL #$440"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test immediate-limit-dec-error{
+ Input  =	"ROL #256"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 8-bit limit for literal"
+}
+
+test absolute-limit-hexa-error{
+ Input  =	"ROL $44001"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test absolute-limit-dec-error{
+ Input  =	"ROL 65537"
+ Output = 	"Error: Syntax error at line 1 - Exceeded the 16-bit limit for address"
+}
+
+test parse-number-error{
+ Input  =	"ROL $0G"
+ Output = 	"Error: Syntax error at line 1 - Cannot parse the hexa or decimal number"
+}
+
+test missing-register-error{
+ Input  =	"ROL $44,"
+ Output = 	"Error: Syntax error at line 1 - Invalid addressing - Missing register"
+}
+
+test undefined-error{
+ Input  =	"ROL name"
+ Output = 	"Error: Syntax error at line 1 - undefined value"
+}
+
+Message {
+ Name = "ROL Instruction for Semantic Errors"
+ Success = "Test passed successfully!"
+ Error 	 = "Test failed!"
+ Setup = 	"C:\\6502-emulator\\emu6502.exe -m"
+}
+
+test zeropagey-denied{
+ Input 	= 	"ROL $44,Y"
+ Output = 	"ROL: error at line 1 - cannot use ZeroPageY addressing"
+}
+
+test absolutey-denied{
+ Input 	= 	"ROL $4400,Y"
+ Output = 	"ROL: error at line 1 - cannot use absoluteY addressing"
+}
+
+test immediate-denied{
+ Input  =	"ROL #$44"
+ Output = 	"ROL: error at line 1 - cannot use immediate addressing"
+}
+
+test indirect-denied{
+ Input  =	"ROL ($4400)"
+ Output = 	"ROL: error at line 1 - cannot use indirect addressing"
+}
+
+test indirectx-denied{
+ Input 	= 	"ROL ($44,X)"
+ Output = 	"ROL: error at line 1 - cannot use indirectX addressing"
+}
+
+test indirecty-denied{
+ Input 	= 	"ROL ($44),Y"
+ Output = 	"ROL: error at line 1 - cannot use indirectY addressing"
+}
